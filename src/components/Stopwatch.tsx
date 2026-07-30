@@ -3,12 +3,16 @@ import { useEffect, useRef, useState } from "react";
 type Stage = "idle" | "waiting" | "running" | "stopped";
 
 const COUNTDOWN_BEEPS = 3;
-const BEEP_INTERVAL_MS = 650;
+const BEEP_INTERVAL_SEC = 0.65;
+const LEAD_IN_SEC = 0.08;
 
-function beep(frequency: number, durationSec: number) {
+function createAudioContext(): AudioContext {
   const AudioCtx =
     window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-  const ctx = new AudioCtx();
+  return new AudioCtx();
+}
+
+function scheduleBeep(ctx: AudioContext, when: number, frequency: number, durationSec: number) {
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
   osc.type = "square";
@@ -16,9 +20,8 @@ function beep(frequency: number, durationSec: number) {
   gain.gain.value = 0.2;
   osc.connect(gain);
   gain.connect(ctx.destination);
-  osc.start();
-  osc.stop(ctx.currentTime + durationSec);
-  osc.onended = () => ctx.close();
+  osc.start(when);
+  osc.stop(when + durationSec);
 }
 
 export function Stopwatch({ onCapture }: { onCapture: (seconds: number) => void }) {
@@ -28,11 +31,13 @@ export function Stopwatch({ onCapture }: { onCapture: (seconds: number) => void 
   const startRef = useRef<number>(0);
   const rafRef = useRef<number>(0);
   const timeoutsRef = useRef<number[]>([]);
+  const audioCtxRef = useRef<AudioContext | null>(null);
 
   useEffect(() => {
     return () => {
       cancelAnimationFrame(rafRef.current);
       timeoutsRef.current.forEach(clearTimeout);
+      audioCtxRef.current?.close();
     };
   }, []);
 
@@ -45,23 +50,34 @@ export function Stopwatch({ onCapture }: { onCapture: (seconds: number) => void 
     setStage("waiting");
     setElapsedMs(0);
     setCountdown(COUNTDOWN_BEEPS);
+    timeoutsRef.current.forEach(clearTimeout);
     timeoutsRef.current = [];
+    audioCtxRef.current?.close();
+
+    const ctx = createAudioContext();
+    audioCtxRef.current = ctx;
+    const base = ctx.currentTime + LEAD_IN_SEC;
 
     for (let i = 0; i < COUNTDOWN_BEEPS; i += 1) {
-      const id = window.setTimeout(() => {
-        beep(900, 0.12);
-        setCountdown(COUNTDOWN_BEEPS - i - 1);
-      }, i * BEEP_INTERVAL_MS);
+      scheduleBeep(ctx, base + i * BEEP_INTERVAL_SEC, 900, 0.12);
+      const id = window.setTimeout(
+        () => setCountdown(COUNTDOWN_BEEPS - i - 1),
+        (LEAD_IN_SEC + i * BEEP_INTERVAL_SEC) * 1000,
+      );
       timeoutsRef.current.push(id);
     }
 
-    const startAt = COUNTDOWN_BEEPS * BEEP_INTERVAL_MS;
-    const startId = window.setTimeout(() => {
-      beep(1800, 0.3);
-      startRef.current = performance.now();
-      setStage("running");
-      rafRef.current = requestAnimationFrame(tick);
-    }, startAt);
+    const startAt = base + COUNTDOWN_BEEPS * BEEP_INTERVAL_SEC;
+    scheduleBeep(ctx, startAt, 1800, 0.3);
+
+    const startId = window.setTimeout(
+      () => {
+        startRef.current = performance.now();
+        setStage("running");
+        rafRef.current = requestAnimationFrame(tick);
+      },
+      (LEAD_IN_SEC + COUNTDOWN_BEEPS * BEEP_INTERVAL_SEC) * 1000,
+    );
     timeoutsRef.current.push(startId);
   }
 
