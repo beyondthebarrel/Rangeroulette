@@ -1,4 +1,5 @@
 import { useGame } from "../game/GameContext";
+import { HeroBackdrop } from "./HeroBackdrop";
 import { PlayingCard } from "./PlayingCard";
 import { TitleFrame } from "./TitleFrame";
 
@@ -8,7 +9,7 @@ export function MatchOverScreen() {
   const ranked = [...state.players].sort((a, b) => b.points - a.points);
 
   return (
-    <div className="flex min-h-svh flex-col items-center justify-center bg-black px-4 py-10">
+    <HeroBackdrop>
       <TitleFrame>
         <h1 className="text-3xl font-bold uppercase tracking-wide text-red-500">
           {winner?.name} Wins!
@@ -48,6 +49,6 @@ export function MatchOverScreen() {
           className="mt-1 w-32 opacity-90"
         />
       </TitleFrame>
-    </div>
+    </HeroBackdrop>
   );
 }

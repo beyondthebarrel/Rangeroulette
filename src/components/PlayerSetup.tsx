@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useGame } from "../game/GameContext";
+import { HeroBackdrop } from "./HeroBackdrop";
 import { RangeRouletteBadge } from "./RangeRouletteBadge";
 import { TitleFrame } from "./TitleFrame";
 
@@ -23,7 +24,7 @@ export function PlayerSetup() {
   const canStart = validNames.length >= 2;
 
   return (
-    <div className="flex min-h-svh flex-col items-center justify-center bg-black px-4 py-10">
+    <HeroBackdrop>
       <TitleFrame>
         <RangeRouletteBadge />
         <p className="-mt-2 text-center text-xs uppercase tracking-widest text-red-500">
@@ -77,6 +78,6 @@ export function PlayerSetup() {
           className="mt-1 w-32 opacity-90"
         />
       </TitleFrame>
-    </div>
+    </HeroBackdrop>
   );
 }
