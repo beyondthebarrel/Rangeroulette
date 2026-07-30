@@ -1,4 +1,6 @@
 import { useGame } from "../game/GameContext";
+import { PlayingCard } from "./PlayingCard";
+import { TitleFrame } from "./TitleFrame";
 
 export function MatchOverScreen() {
   const { state, dispatch } = useGame();
@@ -6,25 +8,46 @@ export function MatchOverScreen() {
   const ranked = [...state.players].sort((a, b) => b.points - a.points);
 
   return (
-    <div className="mx-auto flex max-w-md flex-col gap-4 p-6 text-center">
-      <h1 className="text-3xl font-bold text-emerald-400">{winner?.name} Wins!</h1>
-      <div className="flex flex-col gap-2">
-        {ranked.map((p) => (
-          <div
-            key={p.id}
-            className="flex items-center justify-between rounded-lg border border-zinc-700 p-3"
-          >
-            <span className="text-white">{p.name}</span>
-            <span className="text-emerald-400">{p.points} pts</span>
-          </div>
-        ))}
-      </div>
-      <button
-        onClick={() => dispatch({ type: "RESET_MATCH" })}
-        className="rounded-md bg-emerald-600 px-4 py-3 font-semibold text-white hover:bg-emerald-500"
-      >
-        New Match
-      </button>
+    <div className="flex min-h-svh flex-col items-center justify-center bg-black px-4 py-10">
+      <TitleFrame>
+        <h1 className="text-3xl font-bold uppercase tracking-wide text-red-500">
+          {winner?.name} Wins!
+        </h1>
+
+        <div className="flex w-full flex-col gap-2">
+          {ranked.map((p) => (
+            <div
+              key={p.id}
+              className="rounded-lg border border-red-900/50 bg-zinc-900/60 p-3"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-white">{p.name}</span>
+                <span className="text-red-400">{p.points} pts</span>
+              </div>
+              {p.hand.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {p.hand.map((c) => (
+                    <PlayingCard key={c.instanceId} cardId={c.def.id} className="w-12" />
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        <button
+          onClick={() => dispatch({ type: "RESET_MATCH" })}
+          className="w-full rounded-md bg-red-700 px-4 py-3 font-semibold uppercase tracking-wide text-white hover:bg-red-600"
+        >
+          New Match
+        </button>
+
+        <img
+          src="/btb-logo.png"
+          alt="Beyond the Barrel Concepts"
+          className="mt-1 w-32 opacity-90"
+        />
+      </TitleFrame>
     </div>
   );
 }

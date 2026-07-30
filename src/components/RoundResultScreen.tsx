@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useGame } from "../game/GameContext";
+import { Panel } from "./Panel";
+import { PlayingCard } from "./PlayingCard";
 
 export function RoundResultScreen() {
   const { state, dispatch } = useGame();
@@ -17,69 +19,77 @@ export function RoundResultScreen() {
     });
 
   const winner = state.players.find((p) => p.id === result.winnerId);
+  const lastWhoopsie = state.activeWhoopsies[state.activeWhoopsies.length - 1];
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-4 p-4">
-      <h2 className="text-xl font-bold text-white">Round {state.round} Results</h2>
+      <Panel>
+        <h2 className="text-xl font-bold text-white">Round {state.round} Results</h2>
 
-      <div className="flex flex-col gap-2">
-        {ranked.map(({ p, t }) => (
-          <div
-            key={p.id}
-            className={`flex items-center justify-between rounded-lg border p-3 ${
-              p.id === result.winnerId
-                ? "border-emerald-500 bg-emerald-950/30"
-                : "border-zinc-700 bg-zinc-900/50"
-            }`}
-          >
-            <span className="text-white">{p.name}</span>
-            <span className="font-mono text-white">
-              {t != null ? `${t.toFixed(2)}s` : "DNF"}
-            </span>
+        <div className="flex flex-col gap-2">
+          {ranked.map(({ p, t }) => (
+            <div
+              key={p.id}
+              className={`flex items-center justify-between rounded-lg border p-3 ${
+                p.id === result.winnerId
+                  ? "border-red-500 bg-red-950/30"
+                  : "border-zinc-700 bg-zinc-900/50"
+              }`}
+            >
+              <span className="text-white">{p.name}</span>
+              <span className="font-mono text-white">
+                {t != null ? `${t.toFixed(2)}s` : "DNF"}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {result.tie && (
+          <div className="rounded-lg border border-amber-500 bg-amber-950/30 p-3 text-amber-300">
+            Tie for fastest — no point awarded this round. Next-fastest shooter
+            builds the next drill.
+          </div>
+        )}
+
+        {winner && (
+          <div className="rounded-lg border border-red-600 bg-red-950/30 p-3">
+            <div className="mb-2 text-red-300">
+              {winner.name} wins the round (+1 point) and draws a Challenge card:
+            </div>
+            {result.awardedChallenge && (
+              <div className="flex items-center gap-3">
+                <PlayingCard cardId={result.awardedChallenge.def.id} className="w-20" />
+                <span className="font-semibold text-white">
+                  {result.awardedChallenge.def.text}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {result.donations.map((d, i) => (
+          <div key={i} className="text-sm text-zinc-400">
+            {state.players.find((p) => p.id === d.fromId)?.name} donated 1 point to{" "}
+            {state.players.find((p) => p.id === d.toId)?.name}.
           </div>
         ))}
-      </div>
+      </Panel>
 
-      {result.tie && (
-        <div className="rounded-lg border border-amber-500 bg-amber-950/30 p-3 text-amber-300">
-          Tie for fastest — no point awarded this round. Next-fastest shooter
-          builds the next drill.
-        </div>
-      )}
-
-      {winner && (
-        <div className="rounded-lg border border-emerald-500 bg-emerald-950/30 p-3 text-emerald-300">
-          {winner.name} wins the round (+1 point) and draws a Challenge card:{" "}
-          <span className="font-semibold text-white">
-            {result.awardedChallenge?.def.text}
-          </span>
-        </div>
-      )}
-
-      {result.donations.map((d, i) => (
-        <div key={i} className="text-sm text-zinc-400">
-          {state.players.find((p) => p.id === d.fromId)?.name} donated 1 point to{" "}
-          {state.players.find((p) => p.id === d.toId)?.name}.
-        </div>
-      ))}
-
-      <div className="rounded-lg border border-zinc-700 p-3">
-        <div className="mb-2 text-sm font-semibold text-zinc-300">
-          Standings
-        </div>
+      <Panel>
+        <div className="text-sm font-semibold text-zinc-300">Standings</div>
         <div className="flex flex-wrap gap-3">
           {[...state.players]
             .sort((a, b) => b.points - a.points)
             .map((p) => (
               <div key={p.id} className="text-sm text-white">
-                {p.name}: <span className="text-emerald-400">{p.points}</span>
+                {p.name}: <span className="text-red-400">{p.points}</span>
               </div>
             ))}
         </div>
-      </div>
+      </Panel>
 
-      <div className="rounded-lg border border-pink-700 p-3">
-        <div className="mb-2 text-sm font-semibold text-pink-300">
+      <Panel>
+        <div className="text-sm font-semibold text-pink-300">
           Had a mishap? (gear drop, timer glitch, setup error)
         </div>
         <div className="flex flex-wrap gap-2">
@@ -96,16 +106,17 @@ export function RoundResultScreen() {
             </button>
           ))}
         </div>
-        {whoopsieFor && state.activeWhoopsies.length > 0 && (
-          <div className="mt-2 text-sm text-pink-200">
-            {state.activeWhoopsies[state.activeWhoopsies.length - 1].instance.def.text}
+        {whoopsieFor && lastWhoopsie && (
+          <div className="flex items-center gap-3">
+            <PlayingCard cardId={lastWhoopsie.instance.def.id} className="w-20" />
+            <span className="text-sm text-pink-200">{lastWhoopsie.instance.def.text}</span>
           </div>
         )}
-      </div>
+      </Panel>
 
       <button
         onClick={() => dispatch({ type: "NEXT_ROUND" })}
-        className="rounded-md bg-emerald-600 px-4 py-3 font-semibold text-white hover:bg-emerald-500"
+        className="rounded-md bg-red-700 px-4 py-3 font-semibold uppercase tracking-wide text-white hover:bg-red-600"
       >
         {state.winnerId ? "See Match Winner →" : "Next Round →"}
       </button>

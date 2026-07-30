@@ -8,12 +8,12 @@ export function Header() {
   if (state.phase === "setup") return null;
 
   return (
-    <div className="border-b border-zinc-800 bg-zinc-950/80 px-4 py-2">
+    <div className="border-b border-red-900/50 bg-black px-4 py-2">
       <div className="mx-auto flex max-w-3xl items-center justify-between">
         <div className="flex flex-wrap gap-3 text-sm text-zinc-300">
           {state.players.map((p) => (
             <span key={p.id}>
-              {p.name} <span className="text-emerald-400">{p.points}</span>
+              {p.name} <span className="text-red-400">{p.points}</span>
             </span>
           ))}
         </div>

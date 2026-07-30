@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useGame } from "../game/GameContext";
 import type { ScoreEntry } from "../game/types";
+import { Panel } from "./Panel";
 import { Stopwatch } from "./Stopwatch";
 
 function Stepper({
@@ -49,7 +50,7 @@ function PlayerScoreCard({
   const [manualValue, setManualValue] = useState("");
 
   return (
-    <div className="rounded-lg border border-zinc-700 bg-zinc-900/60 p-4">
+    <div className="rounded-lg border border-red-900/40 bg-zinc-900/60 p-4">
       <div className="mb-3 flex items-center justify-between">
         <h3 className="text-lg font-semibold text-white">{name}</h3>
         <label className="flex items-center gap-2 text-sm text-zinc-400">
@@ -113,7 +114,7 @@ function PlayerScoreCard({
                     setManualValue("");
                   }
                 }}
-                className="rounded bg-emerald-700 px-3 py-1 text-sm text-white hover:bg-emerald-600"
+                className="rounded bg-red-700 px-3 py-1 text-sm text-white hover:bg-red-600"
               >
                 Set
               </button>
@@ -159,27 +160,29 @@ export function ScoreEntryScreen({
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-4 p-4">
-      <h2 className="text-xl font-bold text-white">{title}</h2>
-      {parSeconds != null && (
-        <div className="text-sm text-zinc-400">
-          Par time: <span className="text-amber-300">{parSeconds}s</span> — over par adds +1.0s
-        </div>
-      )}
-      {state.players.map((p) => (
-        <PlayerScoreCard
-          key={p.id}
-          playerId={p.id}
-          name={p.name}
-          entry={state.scores[p.id]}
-          onChange={(entry) =>
-            dispatch({ type: "SET_SCORE", playerId: p.id, entry })
-          }
-        />
-      ))}
+      <Panel>
+        <h2 className="text-xl font-bold text-white">{title}</h2>
+        {parSeconds != null && (
+          <div className="text-sm text-zinc-400">
+            Par time: <span className="text-amber-300">{parSeconds}s</span> — over par adds +1.0s
+          </div>
+        )}
+        {state.players.map((p) => (
+          <PlayerScoreCard
+            key={p.id}
+            playerId={p.id}
+            name={p.name}
+            entry={state.scores[p.id]}
+            onChange={(entry) =>
+              dispatch({ type: "SET_SCORE", playerId: p.id, entry })
+            }
+          />
+        ))}
+      </Panel>
       <button
         disabled={!allEntered}
         onClick={onSubmit}
-        className="rounded-md bg-emerald-600 px-4 py-3 font-semibold text-white enabled:hover:bg-emerald-500 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400"
+        className="rounded-md bg-red-700 px-4 py-3 font-semibold uppercase tracking-wide text-white enabled:hover:bg-red-600 disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-500"
       >
         {submitLabel}
       </button>
