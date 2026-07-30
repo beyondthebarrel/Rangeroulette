@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { CATEGORY_ORDER } from "../data/cards";
 import { useGame } from "../game/GameContext";
 import type { ScoreEntry } from "../game/types";
 import { Panel } from "./Panel";
+import { PlayingCard } from "./PlayingCard";
 import { Stopwatch } from "./Stopwatch";
 
 function Stepper({
@@ -158,8 +160,48 @@ export function ScoreEntryScreen({
     return e && (e.dnf || e.rawSeconds != null);
   });
 
+  const drill = state.currentDrill;
+
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-4 p-4">
+      {drill && (
+        <Panel>
+          <div className="text-sm font-semibold text-zinc-300">
+            The Drill (for reference — run it now)
+          </div>
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+            {CATEGORY_ORDER.map((cat) => {
+              const card = drill.cards[cat];
+              if (!card) return null;
+              return (
+                <PlayingCard
+                  key={card.instanceId}
+                  cardId={card.def.id}
+                  overlay={
+                    card.def.dealersChoice ? (
+                      <div className="absolute inset-x-0 bottom-0 bg-black/80 p-1.5 text-center text-xs text-white">
+                        {drill.dealersChoiceValues[cat]}
+                      </div>
+                    ) : undefined
+                  }
+                />
+              );
+            })}
+          </div>
+          {drill.activeChallenges.length > 0 && (
+            <ul className="flex flex-col gap-1">
+              {drill.activeChallenges.map((c) => {
+                const target = state.players.find((p) => p.id === c.targetPlayerId);
+                return (
+                  <li key={c.instance.instanceId} className="text-sm text-zinc-200">
+                    <span className="text-white">{target?.name}</span>: {c.instance.def.text}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </Panel>
+      )}
       <Panel>
         <h2 className="text-xl font-bold text-white">{title}</h2>
         {parSeconds != null && (
