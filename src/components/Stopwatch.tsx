@@ -4,7 +4,6 @@ type Stage = "idle" | "waiting" | "running" | "stopped";
 
 const COUNTDOWN_BEEPS = 3;
 const BEEP_INTERVAL_MS = 650;
-const START_DELAY_MS = 550;
 
 function beep(frequency: number, durationSec: number) {
   const AudioCtx =
@@ -56,7 +55,7 @@ export function Stopwatch({ onCapture }: { onCapture: (seconds: number) => void 
       timeoutsRef.current.push(id);
     }
 
-    const startAt = COUNTDOWN_BEEPS * BEEP_INTERVAL_MS + START_DELAY_MS;
+    const startAt = COUNTDOWN_BEEPS * BEEP_INTERVAL_MS;
     const startId = window.setTimeout(() => {
       beep(1800, 0.3);
       startRef.current = performance.now();
