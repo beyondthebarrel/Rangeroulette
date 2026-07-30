@@ -1,5 +1,5 @@
 const CX = 200;
-const CY = 195;
+const CY = 225;
 const R_OUTER = 105;
 const R_INNER = 26;
 
@@ -71,7 +71,7 @@ const CATEGORY_ICONS: React.ReactNode[] = [
 export function RangeRouletteBadge() {
   const count = CATEGORY_ICONS.length;
   return (
-    <svg viewBox="0 0 400 400" className="w-full max-w-[280px]">
+    <svg viewBox="0 0 400 430" className="w-full max-w-[280px]">
       <defs>
         <path
           id="rr-arc-top"
