@@ -34,7 +34,7 @@ function CornerMedallion({
 
 export function TitleFrame({ children }: { children: ReactNode }) {
   return (
-    <div className="relative mx-auto w-full max-w-md overflow-hidden rounded-2xl border-2 border-red-700 bg-gradient-to-b from-zinc-950 via-black to-zinc-950 px-6 pb-6 pt-8 shadow-[0_0_80px_rgba(153,27,27,0.15)]">
+    <div className="relative mx-auto w-full max-w-md overflow-hidden rounded-2xl border-2 border-red-700 bg-gradient-to-b from-zinc-950 via-black to-zinc-950 px-4 pb-4 pt-6 shadow-[0_0_80px_rgba(153,27,27,0.15)] sm:px-6 sm:pb-6 sm:pt-8">
       <svg
         className="pointer-events-none absolute inset-0 h-full w-full opacity-[0.07]"
         viewBox="0 0 400 400"
@@ -55,7 +55,7 @@ export function TitleFrame({ children }: { children: ReactNode }) {
       <CornerMedallion className="bottom-2 left-2" icon="suit" />
       <CornerMedallion className="bottom-2 right-2" icon="reticle" />
 
-      <div className="relative z-10 flex flex-col items-center gap-5">
+      <div className="relative z-10 flex flex-col items-center gap-3 sm:gap-5">
         {children}
       </div>
     </div>
