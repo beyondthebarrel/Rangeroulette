@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useGame } from "../game/GameContext";
 import { HeroBackdrop } from "./HeroBackdrop";
-import { RangeRouletteBadge } from "./RangeRouletteBadge";
 import { TitleFrame } from "./TitleFrame";
 
 export function PlayerSetup() {
@@ -26,10 +25,11 @@ export function PlayerSetup() {
   return (
     <HeroBackdrop>
       <TitleFrame>
-        <RangeRouletteBadge />
-        <p className="-mt-2 text-center text-xs uppercase tracking-widest text-red-500">
-          Every draw is a new problem.
-        </p>
+        <img
+          src="/badge-wheel.jpg"
+          alt="Range Roulette — every draw is a new problem"
+          className="w-full max-w-[170px] rounded-md sm:max-w-[260px]"
+        />
 
         <div className="flex w-full flex-col gap-1.5 sm:gap-2">
           {names.map((n, i) => (
