@@ -299,6 +299,12 @@ export function reducer(state: GameState, action: Action): GameState {
     }
 
     case "DRAW_ROUND": {
+      // Idempotent: RoundBuildScreen dispatches this on mount, and React
+      // StrictMode double-invokes mount effects in dev. Without this guard,
+      // that second dispatch silently draws and discards an extra set of
+      // cards every round -- they never reach the discard pile, so the
+      // category decks permanently lose cards twice as fast as intended.
+      if (state.currentDrill) return state;
       const categoryDecks = { ...state.categoryDecks };
       const cards: CurrentDrill["cards"] = {};
       CATEGORY_ORDER.forEach((cat) => {
