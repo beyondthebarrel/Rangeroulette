@@ -1,10 +1,10 @@
 import { useGame } from "../game/GameContext";
+import { resolveParSeconds } from "../game/reducer";
 import { ScoreEntryScreen } from "./ScoreEntryScreen";
 
 export function ScoreScreen() {
   const { state, dispatch } = useGame();
-  const drill = state.currentDrill;
-  const parSeconds = drill?.cards.time?.def.parSeconds;
+  const parSeconds = resolveParSeconds(state.currentDrill);
 
   return (
     <ScoreEntryScreen

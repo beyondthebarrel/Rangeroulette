@@ -93,6 +93,18 @@ function computeFinalTime(
   return Math.round(total * 100) / 100;
 }
 
+/** Resolves the drill's effective par time, including a Dealer's Choice time value. */
+export function resolveParSeconds(drill: GameState["currentDrill"]): number | undefined {
+  if (!drill || drill.isBillDrill) return undefined;
+  const timeCard = drill.cards.time;
+  if (!timeCard) return undefined;
+  if (!timeCard.def.dealersChoice) return timeCard.def.parSeconds;
+  const chosen = drill.dealersChoiceValues.time;
+  if (!chosen) return undefined;
+  const parsed = parseFloat(chosen);
+  return Number.isNaN(parsed) ? undefined : parsed;
+}
+
 function activeChallengesFor(
   drill: GameState["currentDrill"],
   playerId: string,
@@ -104,9 +116,7 @@ function activeChallengesFor(
 function resolveRound(state: GameState): GameState {
   const drill = state.currentDrill;
   if (!drill) return state;
-  const parSeconds = drill.isBillDrill
-    ? undefined
-    : drill.cards.time?.def.parSeconds;
+  const parSeconds = resolveParSeconds(drill);
 
   const finalTimes: Record<string, number | null> = {};
   state.players.forEach((p) => {
