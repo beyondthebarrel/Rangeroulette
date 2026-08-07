@@ -49,12 +49,12 @@ export interface CurrentDrill {
   isBillDrill: boolean;
   cards: Partial<Record<CategoryKey, CategoryCardInstance>>;
   dealersChoiceValues: Partial<Record<CategoryKey, string>>;
-  activeChallenges: ActiveChallenge[];
 }
 
 export type Phase =
   | "setup"
   | "billDrill"
+  | "playChallenges"
   | "build"
   | "score"
   | "roundResult"
@@ -80,6 +80,8 @@ export interface GameState {
   challengeDeck: DeckState<ChallengeCardInstance>;
   whoopsieDeck: DeckState<WhoopsieCardInstance>;
   currentDrill: CurrentDrill | null;
+  activeChallenges: ActiveChallenge[];
+  pendingPhase: "build" | "billDrill";
   activeWhoopsies: ActiveWhoopsie[];
   scores: Record<string, ScoreEntry>;
   lastRoundResult: RoundResult | null;

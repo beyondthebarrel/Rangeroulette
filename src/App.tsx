@@ -4,6 +4,7 @@ import { Header } from "./components/Header";
 import { LeaderboardScreen } from "./components/LeaderboardScreen";
 import { MatchOverScreen } from "./components/MatchOverScreen";
 import { ModeSelectScreen } from "./components/ModeSelectScreen";
+import { PlayChallengesScreen } from "./components/PlayChallengesScreen";
 import { PlayerSetup } from "./components/PlayerSetup";
 import { RoundBuildScreen } from "./components/RoundBuildScreen";
 import { RoundResultScreen } from "./components/RoundResultScreen";
@@ -21,6 +22,8 @@ function GameScreen({ onBackToModes }: { onBackToModes: () => void }) {
       return <PlayerSetup onBackToModes={onBackToModes} />;
     case "billDrill":
       return <BillDrillScreen />;
+    case "playChallenges":
+      return <PlayChallengesScreen />;
     case "build":
       return <RoundBuildScreen />;
     case "score":

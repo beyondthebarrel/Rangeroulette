@@ -23,6 +23,7 @@ import type {
 export type Action =
   | { type: "START_MATCH"; names: string[] }
   | { type: "FINISH_BILL_DRILL" }
+  | { type: "CONTINUE_TO_DRILL" }
   | { type: "DRAW_ROUND" }
   | { type: "SET_DEALERS_CHOICE"; category: CategoryKey; value: string }
   | { type: "PLAY_CHALLENGE"; playerId: string; instanceId: string; targetPlayerId: string }
@@ -33,6 +34,10 @@ export type Action =
   | { type: "CALL_WHOOPSIE"; playerId: string }
   | { type: "NEXT_ROUND" }
   | { type: "RESET_MATCH" };
+
+function anyPlayerHasChallengeCards(players: Player[]): boolean {
+  return players.some((p) => p.hand.length > 0);
+}
 
 function emptyScore(): ScoreEntry {
   return { rawSeconds: null, zoneMisses: 0, completeMisses: 0, dnf: false };
@@ -70,6 +75,8 @@ export function initialState(): GameState {
       (def, instanceId) => ({ instanceId, def }),
     ),
     currentDrill: null,
+    activeChallenges: [],
+    pendingPhase: "build",
     activeWhoopsies: [],
     scores: {},
     lastRoundResult: null,
@@ -106,11 +113,10 @@ export function resolveParSeconds(drill: GameState["currentDrill"]): number | un
 }
 
 function activeChallengesFor(
-  drill: GameState["currentDrill"],
+  activeChallenges: ActiveChallenge[],
   playerId: string,
 ): ActiveChallenge[] {
-  if (!drill) return [];
-  return drill.activeChallenges.filter((c) => c.targetPlayerId === playerId);
+  return activeChallenges.filter((c) => c.targetPlayerId === playerId);
 }
 
 function resolveRound(state: GameState): GameState {
@@ -121,7 +127,7 @@ function resolveRound(state: GameState): GameState {
   const finalTimes: Record<string, number | null> = {};
   state.players.forEach((p) => {
     const entry = state.scores[p.id] ?? emptyScore();
-    const extra = activeChallengesFor(drill, p.id).some(
+    const extra = activeChallengesFor(state.activeChallenges, p.id).some(
       (c) => c.instance.def.autoEffect === "plusHalfSecond",
     )
       ? 0.5
@@ -161,7 +167,7 @@ function resolveRound(state: GameState): GameState {
       p.id === winnerId ? { ...p, hand: [...p.hand, draw.card] } : p,
     );
 
-    const donors = drill.activeChallenges.filter(
+    const donors = state.activeChallenges.filter(
       (c) => c.instance.def.autoEffect === "donateLastPlace",
     );
     donors.forEach((donor) => {
@@ -203,7 +209,7 @@ function resolveRound(state: GameState): GameState {
       }
     });
   }
-  drill.activeChallenges.forEach((c) => {
+  state.activeChallenges.forEach((c) => {
     challengeDeck = discardTo(challengeDeck, c.instance);
   });
 
@@ -212,6 +218,7 @@ function resolveRound(state: GameState): GameState {
     players,
     categoryDecks,
     challengeDeck,
+    activeChallenges: [],
     phase: "roundResult",
     lastRoundResult: result,
     winnerId: matchWinner ? matchWinner.id : null,
@@ -257,14 +264,20 @@ export function reducer(state: GameState, action: Action): GameState {
         if (b.t == null) return -1;
         return a.t - b.t;
       });
+      const players = ranked.map((r) => r.p);
       return {
         ...state,
-        players: ranked.map((r) => r.p),
+        players,
         dealerIndex: 0,
-        phase: "build",
+        pendingPhase: "build",
+        phase: anyPlayerHasChallengeCards(players) ? "playChallenges" : "build",
         round: 1,
         scores: Object.fromEntries(state.players.map((p) => [p.id, emptyScore()])),
       };
+    }
+
+    case "CONTINUE_TO_DRILL": {
+      return { ...state, phase: state.pendingPhase };
     }
 
     case "DRAW_ROUND": {
@@ -282,7 +295,6 @@ export function reducer(state: GameState, action: Action): GameState {
           isBillDrill: false,
           cards,
           dealersChoiceValues: {},
-          activeChallenges: [],
         },
       };
     }
@@ -302,7 +314,6 @@ export function reducer(state: GameState, action: Action): GameState {
     }
 
     case "PLAY_CHALLENGE": {
-      if (!state.currentDrill) return state;
       const player = state.players.find((p) => p.id === action.playerId);
       if (!player) return state;
       const cardIndex = player.hand.findIndex(
@@ -323,16 +334,12 @@ export function reducer(state: GameState, action: Action): GameState {
       return {
         ...state,
         players,
-        currentDrill: {
-          ...state.currentDrill,
-          activeChallenges: [...state.currentDrill.activeChallenges, active],
-        },
+        activeChallenges: [...state.activeChallenges, active],
       };
     }
 
     case "REVERSE_CHALLENGE": {
-      if (!state.currentDrill) return state;
-      const active = state.currentDrill.activeChallenges[action.activeIndex];
+      const active = state.activeChallenges[action.activeIndex];
       if (!active) return state;
       const target = state.players.find((p) => p.id === active.targetPlayerId);
       if (!target) return state;
@@ -346,7 +353,7 @@ export function reducer(state: GameState, action: Action): GameState {
           ? { ...p, hand: p.hand.filter((_, i) => i !== reverseIdx) }
           : p,
       );
-      const activeChallenges = state.currentDrill.activeChallenges.map((c, i) =>
+      const activeChallenges = state.activeChallenges.map((c, i) =>
         i === action.activeIndex
           ? { ...c, targetPlayerId: c.playedBy, playedBy: c.targetPlayerId }
           : c,
@@ -355,7 +362,7 @@ export function reducer(state: GameState, action: Action): GameState {
         ...state,
         players,
         challengeDeck: discardTo(state.challengeDeck, reverseCard),
-        currentDrill: { ...state.currentDrill, activeChallenges },
+        activeChallenges,
       };
     }
 
@@ -418,6 +425,7 @@ export function reducer(state: GameState, action: Action): GameState {
       const noOneFinished =
         result != null && result.winnerId == null && !result.tie;
       const forceBillDrill = result != null && result.tie && dealerIndex === state.dealerIndex && result.tiedIds.length === state.players.length;
+      const targetPhase = forceBillDrill || noOneFinished ? "billDrill" : "build";
       return {
         ...state,
         dealerIndex,
@@ -425,7 +433,8 @@ export function reducer(state: GameState, action: Action): GameState {
         currentDrill: null,
         lastRoundResult: null,
         activeWhoopsies,
-        phase: forceBillDrill || noOneFinished ? "billDrill" : "build",
+        pendingPhase: targetPhase,
+        phase: anyPlayerHasChallengeCards(state.players) ? "playChallenges" : targetPhase,
         scores: Object.fromEntries(state.players.map((p) => [p.id, emptyScore()])),
       };
     }

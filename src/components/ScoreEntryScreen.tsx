@@ -113,9 +113,9 @@ export function ScoreEntryScreen({
               );
             })}
           </div>
-          {drill.activeChallenges.length > 0 && (
+          {state.activeChallenges.length > 0 && (
             <ul className="flex flex-col gap-1">
-              {drill.activeChallenges.map((c) => {
+              {state.activeChallenges.map((c) => {
                 const target = state.players.find((p) => p.id === c.targetPlayerId);
                 return (
                   <li key={c.instance.instanceId} className="text-sm text-zinc-200">
