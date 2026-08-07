@@ -1,6 +1,7 @@
 import { CATEGORY_ORDER } from "../data/cards";
 import { useGame } from "../game/GameContext";
 import type { ScoreEntry } from "../game/types";
+import { ActiveWhoopsiePanel } from "./ActiveWhoopsiePanel";
 import { Panel } from "./Panel";
 import { PlayingCard } from "./PlayingCard";
 import { Stepper } from "./Stepper";
@@ -89,6 +90,7 @@ export function ScoreEntryScreen({
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-4 p-4">
+      <ActiveWhoopsiePanel />
       {drill && (
         <Panel>
           <div className="text-sm font-semibold text-zinc-300">

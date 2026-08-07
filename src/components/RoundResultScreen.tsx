@@ -1,12 +1,11 @@
-import { useState } from "react";
 import { useGame } from "../game/GameContext";
+import { ActiveWhoopsiePanel } from "./ActiveWhoopsiePanel";
 import { Panel } from "./Panel";
 import { PlayingCard } from "./PlayingCard";
 
 export function RoundResultScreen() {
   const { state, dispatch } = useGame();
   const result = state.lastRoundResult;
-  const [whoopsieFor, setWhoopsieFor] = useState<string | null>(null);
 
   if (!result) return null;
 
@@ -19,7 +18,6 @@ export function RoundResultScreen() {
     });
 
   const winner = state.players.find((p) => p.id === result.winnerId);
-  const lastWhoopsie = state.activeWhoopsies[state.activeWhoopsies.length - 1];
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-4 p-4">
@@ -96,23 +94,16 @@ export function RoundResultScreen() {
           {state.players.map((p) => (
             <button
               key={p.id}
-              onClick={() => {
-                dispatch({ type: "CALL_WHOOPSIE", playerId: p.id });
-                setWhoopsieFor(p.id);
-              }}
+              onClick={() => dispatch({ type: "CALL_WHOOPSIE", playerId: p.id })}
               className="rounded bg-pink-700 px-2 py-1 text-xs text-white hover:bg-pink-600"
             >
               {p.name} calls Whoopsie
             </button>
           ))}
         </div>
-        {whoopsieFor && lastWhoopsie && (
-          <div className="flex items-center gap-3">
-            <PlayingCard cardId={lastWhoopsie.instance.def.id} className="w-20" />
-            <span className="text-sm text-pink-200">{lastWhoopsie.instance.def.text}</span>
-          </div>
-        )}
       </Panel>
+
+      <ActiveWhoopsiePanel />
 
       <button
         onClick={() => dispatch({ type: "NEXT_ROUND" })}

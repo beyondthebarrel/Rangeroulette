@@ -6,6 +6,7 @@ import {
   type CategoryCardDef,
 } from "../data/cards";
 import { useGame } from "../game/GameContext";
+import { ActiveWhoopsiePanel } from "./ActiveWhoopsiePanel";
 import { Panel } from "./Panel";
 import { PlayingCard } from "./PlayingCard";
 
@@ -92,6 +93,8 @@ export function RoundBuildScreen() {
           })}
         </div>
       </Panel>
+
+      <ActiveWhoopsiePanel />
 
       {state.activeChallenges.length > 0 && (
         <Panel>
