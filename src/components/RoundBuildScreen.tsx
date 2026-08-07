@@ -1,8 +1,20 @@
 import { useEffect, useState } from "react";
-import { CATEGORY_LABELS, CATEGORY_ORDER } from "../data/cards";
+import {
+  CATEGORY_DECKS,
+  CATEGORY_LABELS,
+  CATEGORY_ORDER,
+  type CategoryCardDef,
+  type CategoryKey,
+} from "../data/cards";
 import { useGame } from "../game/GameContext";
 import { Panel } from "./Panel";
 import { PlayingCard } from "./PlayingCard";
+
+const DROPDOWN_CATEGORIES: CategoryKey[] = ["startPosition", "target", "courseOfFire"];
+
+function optionLabel(def: CategoryCardDef): string {
+  return def.detail ? `${def.label} — ${def.detail}` : def.label;
+}
 
 export function RoundBuildScreen() {
   const { state, dispatch } = useGame();
@@ -54,22 +66,49 @@ export function RoundBuildScreen() {
                           Dealer must set a value
                         </div>
                       )}
-                      <input
-                        value={drill.dealersChoiceValues[cat] ?? ""}
-                        onChange={(e) =>
-                          dispatch({
-                            type: "SET_DEALERS_CHOICE",
-                            category: cat,
-                            value: e.target.value,
-                          })
-                        }
-                        placeholder="type value here"
-                        className={`w-full rounded border bg-zinc-900 px-1.5 py-1 text-center text-xs text-white focus:outline-none ${
-                          (drill.dealersChoiceValues[cat] ?? "").trim()
-                            ? "border-red-700"
-                            : "animate-pulse border-red-500 ring-2 ring-red-500"
-                        }`}
-                      />
+                      {DROPDOWN_CATEGORIES.includes(cat) ? (
+                        <select
+                          value={drill.dealersChoiceValues[cat] ?? ""}
+                          onChange={(e) =>
+                            dispatch({
+                              type: "SET_DEALERS_CHOICE",
+                              category: cat,
+                              value: e.target.value,
+                            })
+                          }
+                          className={`w-full rounded border bg-zinc-900 px-1 py-1 text-center text-[11px] text-white focus:outline-none ${
+                            (drill.dealersChoiceValues[cat] ?? "").trim()
+                              ? "border-red-700"
+                              : "animate-pulse border-red-500 ring-2 ring-red-500"
+                          }`}
+                        >
+                          <option value="" disabled>
+                            choose one
+                          </option>
+                          {CATEGORY_DECKS[cat].map((def) => (
+                            <option key={def.id} value={optionLabel(def)}>
+                              {optionLabel(def)}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input
+                          value={drill.dealersChoiceValues[cat] ?? ""}
+                          onChange={(e) =>
+                            dispatch({
+                              type: "SET_DEALERS_CHOICE",
+                              category: cat,
+                              value: e.target.value,
+                            })
+                          }
+                          placeholder="type value here"
+                          className={`w-full rounded border bg-zinc-900 px-1.5 py-1 text-center text-xs text-white focus:outline-none ${
+                            (drill.dealersChoiceValues[cat] ?? "").trim()
+                              ? "border-red-700"
+                              : "animate-pulse border-red-500 ring-2 ring-red-500"
+                          }`}
+                        />
+                      )}
                     </div>
                   ) : undefined
                 }
