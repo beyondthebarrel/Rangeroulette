@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { CATEGORY_ORDER } from "../data/cards";
+import { CATEGORY_LABELS, CATEGORY_ORDER } from "../data/cards";
 import { useGame } from "../game/GameContext";
 import { Panel } from "./Panel";
 import { PlayingCard } from "./PlayingCard";
@@ -21,9 +21,10 @@ export function RoundBuildScreen() {
   const needsDealersChoice = CATEGORY_ORDER.filter(
     (cat) => drill.cards[cat]?.def.dealersChoice,
   );
-  const readyToScore = needsDealersChoice.every(
-    (cat) => (drill.dealersChoiceValues[cat] ?? "").trim().length > 0,
+  const missingDealersChoice = needsDealersChoice.filter(
+    (cat) => (drill.dealersChoiceValues[cat] ?? "").trim().length === 0,
   );
+  const readyToScore = missingDealersChoice.length === 0;
 
   const playersWithCards = state.players.filter((p) => p.hand.length > 0);
 
@@ -47,7 +48,12 @@ export function RoundBuildScreen() {
                 cardId={card.def.id}
                 overlay={
                   card.def.dealersChoice ? (
-                    <div className="absolute inset-x-0 bottom-0 bg-black/80 p-1.5">
+                    <div className="absolute inset-x-0 bottom-0 flex flex-col gap-1 bg-black/80 p-1.5">
+                      {!(drill.dealersChoiceValues[cat] ?? "").trim() && (
+                        <div className="text-center text-[10px] font-semibold uppercase tracking-wide text-red-400">
+                          Dealer must set a value
+                        </div>
+                      )}
                       <input
                         value={drill.dealersChoiceValues[cat] ?? ""}
                         onChange={(e) =>
@@ -57,8 +63,12 @@ export function RoundBuildScreen() {
                             value: e.target.value,
                           })
                         }
-                        placeholder="set value"
-                        className="w-full rounded border border-red-700 bg-zinc-900 px-1.5 py-1 text-center text-xs text-white focus:outline-none"
+                        placeholder="type value here"
+                        className={`w-full rounded border bg-zinc-900 px-1.5 py-1 text-center text-xs text-white focus:outline-none ${
+                          (drill.dealersChoiceValues[cat] ?? "").trim()
+                            ? "border-red-700"
+                            : "animate-pulse border-red-500 ring-2 ring-red-500"
+                        }`}
                       />
                     </div>
                   ) : undefined
@@ -161,6 +171,13 @@ export function RoundBuildScreen() {
         </Panel>
       )}
 
+      {!readyToScore && (
+        <div className="text-center text-sm text-red-400">
+          Waiting on Dealer&apos;s Choice value
+          {missingDealersChoice.length > 1 ? "s" : ""} for:{" "}
+          {missingDealersChoice.map((cat) => CATEGORY_LABELS[cat]).join(", ")}
+        </div>
+      )}
       <button
         disabled={!readyToScore}
         onClick={() => dispatch({ type: "START_SCORING" })}
