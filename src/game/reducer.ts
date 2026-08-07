@@ -264,14 +264,32 @@ export function reducer(state: GameState, action: Action): GameState {
         if (b.t == null) return -1;
         return a.t - b.t;
       });
-      const players = ranked.map((r) => r.p);
+
+      // The very first Bill Drill (before round 1) sets initial turn order.
+      // A Bill Drill forced mid-match by a tie/no-finish should only pick
+      // the next dealer -- it must not reorder players or rewind the round
+      // counter, since points and rotation already earned so far still stand.
+      const isInitialBillDrill = state.round === 0;
+      let players = state.players;
+      let dealerIndex = state.dealerIndex;
+      let round = state.round;
+
+      if (isInitialBillDrill) {
+        players = ranked.map((r) => r.p);
+        dealerIndex = 0;
+        round = 1;
+      } else if (ranked[0] && ranked[0].t != null) {
+        const fastestIndex = state.players.findIndex((p) => p.id === ranked[0].p.id);
+        if (fastestIndex !== -1) dealerIndex = fastestIndex;
+      }
+
       return {
         ...state,
         players,
-        dealerIndex: 0,
+        dealerIndex,
+        round,
         pendingPhase: "build",
         phase: anyPlayerHasChallengeCards(players) ? "playChallenges" : "build",
-        round: 1,
         scores: Object.fromEntries(state.players.map((p) => [p.id, emptyScore()])),
       };
     }
