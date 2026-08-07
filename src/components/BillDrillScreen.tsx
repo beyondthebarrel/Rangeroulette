@@ -5,7 +5,7 @@ export function BillDrillScreen() {
   const { dispatch } = useGame();
   return (
     <ScoreEntryScreen
-      title="Bill Drill — 10 rounds, 5 yards, A-zone"
+      title="Bill Drill — 6 rounds, 7 yards, A-zone"
       onSubmit={() => dispatch({ type: "FINISH_BILL_DRILL" })}
       submitLabel="Finish Bill Drill"
     />

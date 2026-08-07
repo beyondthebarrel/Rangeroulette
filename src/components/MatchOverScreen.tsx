@@ -1,6 +1,7 @@
 import { useGame } from "../game/GameContext";
 import { HeroBackdrop } from "./HeroBackdrop";
 import { PlayingCard } from "./PlayingCard";
+import { RetryImage } from "./RetryImage";
 import { TitleFrame } from "./TitleFrame";
 
 export function MatchOverScreen() {
@@ -43,7 +44,7 @@ export function MatchOverScreen() {
           New Match
         </button>
 
-        <img
+        <RetryImage
           src="/btb-logo.png"
           alt="Beyond the Barrel Concepts"
           className="mt-1 w-32 opacity-90"

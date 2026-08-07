@@ -170,6 +170,6 @@ export const SCORING = {
 
 export const BILL_DRILL = {
   label: "Bill Drill",
-  detail: "10 rounds, 5 yards, A-zone",
+  detail: "6 rounds, 7 yards, A-zone",
   parSeconds: undefined as number | undefined,
 };

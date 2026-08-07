@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
+import { useRetryingImageSrc } from "../hooks/useRetryingImageSrc";
 
 function CardBackMark() {
   return (
@@ -26,6 +27,7 @@ export function PlayingCard({
   faceDown?: boolean;
 }) {
   const [revealed, setRevealed] = useState(false);
+  const { src, onError } = useRetryingImageSrc(`/cards/${cardId}.jpg`);
 
   useEffect(() => {
     if (faceDown) {
@@ -45,10 +47,11 @@ export function PlayingCard({
       >
         <div className="absolute inset-0 overflow-hidden rounded-xl shadow-lg [backface-visibility:hidden]">
           <img
-            src={`/cards/${cardId}.jpg`}
+            src={src}
             alt=""
             className="h-full w-full object-cover"
             draggable={false}
+            onError={onError}
           />
           {overlay}
         </div>

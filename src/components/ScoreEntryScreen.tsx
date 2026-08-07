@@ -1,41 +1,9 @@
-import { useState } from "react";
 import { CATEGORY_ORDER } from "../data/cards";
 import { useGame } from "../game/GameContext";
 import type { ScoreEntry } from "../game/types";
 import { Panel } from "./Panel";
 import { PlayingCard } from "./PlayingCard";
-import { Stopwatch } from "./Stopwatch";
-
-function Stepper({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: number;
-  onChange: (v: number) => void;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-2">
-      <span className="text-sm text-zinc-400">{label}</span>
-      <div className="flex items-center gap-2">
-        <button
-          onClick={() => onChange(Math.max(0, value - 1))}
-          className="h-7 w-7 rounded bg-zinc-700 text-white hover:bg-zinc-600"
-        >
-          −
-        </button>
-        <span className="w-5 text-center font-mono text-white">{value}</span>
-        <button
-          onClick={() => onChange(value + 1)}
-          className="h-7 w-7 rounded bg-zinc-700 text-white hover:bg-zinc-600"
-        >
-          +
-        </button>
-      </div>
-    </div>
-  );
-}
+import { Stepper } from "./Stepper";
 
 function PlayerScoreCard({
   playerId,
@@ -48,9 +16,6 @@ function PlayerScoreCard({
   entry: ScoreEntry;
   onChange: (entry: ScoreEntry) => void;
 }) {
-  const [mode, setMode] = useState<"idle" | "timer" | "manual">("idle");
-  const [manualValue, setManualValue] = useState("");
-
   return (
     <div className="rounded-lg border border-red-900/40 bg-zinc-900/60 p-4">
       <div className="mb-3 flex items-center justify-between">
@@ -67,61 +32,21 @@ function PlayerScoreCard({
 
       {!entry.dnf && (
         <>
-          <div className="mb-3 flex items-center gap-3">
-            <div className="font-mono text-2xl text-white">
-              {entry.rawSeconds != null ? `${entry.rawSeconds.toFixed(2)}s` : "—"}
-            </div>
-            <button
-              onClick={() => setMode(mode === "timer" ? "idle" : "timer")}
-              className="rounded bg-sky-700 px-3 py-1 text-sm text-white hover:bg-sky-600"
-            >
-              {mode === "timer" ? "Close Timer" : "Time It"}
-            </button>
-            <button
-              onClick={() => setMode(mode === "manual" ? "idle" : "manual")}
-              className="rounded bg-zinc-700 px-3 py-1 text-sm text-white hover:bg-zinc-600"
-            >
-              {mode === "manual" ? "Cancel" : "Enter Manually"}
-            </button>
+          <div className="mb-3 flex items-center gap-2">
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              value={entry.rawSeconds ?? ""}
+              onChange={(e) => {
+                const n = parseFloat(e.target.value);
+                onChange({ ...entry, rawSeconds: Number.isNaN(n) ? null : n });
+              }}
+              placeholder="seconds"
+              className="w-28 rounded border border-zinc-600 bg-zinc-800 px-2 py-1.5 text-white"
+            />
+            <span className="text-sm text-zinc-500">seconds</span>
           </div>
-
-          {mode === "timer" && (
-            <div className="mb-3">
-              <Stopwatch
-                onCapture={(s) => {
-                  onChange({ ...entry, rawSeconds: s });
-                  setMode("idle");
-                }}
-              />
-            </div>
-          )}
-
-          {mode === "manual" && (
-            <div className="mb-3 flex items-center gap-2">
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={manualValue}
-                onChange={(e) => setManualValue(e.target.value)}
-                placeholder="seconds"
-                className="w-28 rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-white"
-              />
-              <button
-                onClick={() => {
-                  const n = parseFloat(manualValue);
-                  if (!Number.isNaN(n)) {
-                    onChange({ ...entry, rawSeconds: n });
-                    setMode("idle");
-                    setManualValue("");
-                  }
-                }}
-                className="rounded bg-red-700 px-3 py-1 text-sm text-white hover:bg-red-600"
-              >
-                Set
-              </button>
-            </div>
-          )}
 
           <div className="grid grid-cols-2 gap-3">
             <Stepper

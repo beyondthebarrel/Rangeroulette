@@ -71,6 +71,7 @@ export interface RoundResult {
 
 export interface GameState {
   phase: Phase;
+  matchId: string;
   players: Player[];
   dealerIndex: number;
   round: number;

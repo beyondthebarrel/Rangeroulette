@@ -53,6 +53,7 @@ function freshCategoryDecks(): GameState["categoryDecks"] {
 export function initialState(): GameState {
   return {
     phase: "setup",
+    matchId: nextId("match"),
     players: [],
     dealerIndex: 0,
     round: 0,
