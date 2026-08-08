@@ -1,11 +1,24 @@
 import { useState } from "react";
+import { useAuth } from "../auth/AuthContext";
 import { useGame } from "../game/GameContext";
 
 export function Header() {
   const { state, dispatch } = useGame();
+  const { user, signOut } = useAuth();
   const [confirming, setConfirming] = useState(false);
 
-  if (state.phase === "setup") return null;
+  if (state.phase === "setup") {
+    return (
+      <div className="border-b border-red-900/50 bg-black px-4 py-1.5 text-right">
+        <div className="mx-auto flex max-w-3xl items-center justify-end gap-2 text-xs text-zinc-500">
+          <span className="truncate">{user?.email}</span>
+          <button onClick={() => signOut()} className="text-zinc-500 hover:text-zinc-300">
+            Sign out
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="border-b border-red-900/50 bg-black px-4 py-2">

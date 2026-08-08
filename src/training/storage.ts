@@ -1,67 +1,90 @@
-import type { TrainingSession } from "./types";
+import { supabase } from "../integrations/supabase/client";
+import type { TrainingDrill, TrainingSession } from "./types";
 
-const STORAGE_KEY = "range-roulette-training-v1";
 const LAST_NAME_KEY = "range-roulette-training-last-name";
-
-interface TrainingData {
-  sessions: TrainingSession[];
-}
-
-let idCounter = 0;
-function nextSessionId(): string {
-  idCounter += 1;
-  return `train-${Date.now()}-${idCounter}-${Math.random().toString(36).slice(2, 7)}`;
-}
 
 function normalizeName(name: string): string {
   return name.trim().toLowerCase();
 }
 
-function emptyData(): TrainingData {
-  return { sessions: [] };
-}
-
-function load(): TrainingData {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return emptyData();
-    const parsed = JSON.parse(raw) as Partial<TrainingData>;
-    return { sessions: parsed.sessions ?? [] };
-  } catch {
-    return emptyData();
-  }
-}
-
-function save(data: TrainingData) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-}
-
-export function recordTrainingSession(
-  session: Omit<TrainingSession, "id" | "loggedAt">,
-): TrainingSession {
-  const data = load();
-  const full: TrainingSession = {
-    ...session,
-    id: nextSessionId(),
-    loggedAt: new Date().toISOString(),
+function fromRow(row: {
+  id: string;
+  trainee: string;
+  logged_at: string;
+  drill: unknown;
+  raw_seconds: number;
+  zone_misses: number;
+  complete_misses: number;
+  final_seconds: number;
+}): TrainingSession {
+  return {
+    id: row.id,
+    trainee: row.trainee,
+    loggedAt: row.logged_at,
+    drill: row.drill as TrainingDrill,
+    rawSeconds: row.raw_seconds,
+    zoneMisses: row.zone_misses,
+    completeMisses: row.complete_misses,
+    finalSeconds: row.final_seconds,
   };
-  data.sessions.push(full);
-  save(data);
-  return full;
 }
 
-export function getTrainingSessions(trainee?: string): TrainingSession[] {
-  const data = load();
-  const sessions = trainee
-    ? data.sessions.filter((s) => normalizeName(s.trainee) === normalizeName(trainee))
-    : data.sessions;
-  return [...sessions].sort((a, b) => b.loggedAt.localeCompare(a.loggedAt));
+export async function recordTrainingSession(
+  session: Omit<TrainingSession, "id" | "loggedAt">,
+  recordedBy: string,
+): Promise<TrainingSession | null> {
+  const { data, error } = await supabase
+    .from("training_sessions")
+    .insert({
+      recorded_by: recordedBy,
+      trainee: session.trainee,
+      trainee_normalized: normalizeName(session.trainee),
+      drill: session.drill,
+      raw_seconds: session.rawSeconds,
+      zone_misses: session.zoneMisses,
+      complete_misses: session.completeMisses,
+      final_seconds: session.finalSeconds,
+    })
+    .select()
+    .single();
+
+  if (error || !data) {
+    console.error("Failed to record training session", error);
+    return null;
+  }
+  return fromRow(data);
 }
 
-export function getTraineeNames(): string[] {
-  const data = load();
+export async function getTrainingSessions(trainee?: string): Promise<TrainingSession[]> {
+  let query = supabase
+    .from("training_sessions")
+    .select("*")
+    .order("logged_at", { ascending: false });
+
+  if (trainee) {
+    query = query.eq("trainee_normalized", normalizeName(trainee));
+  }
+
+  const { data, error } = await query;
+  if (error || !data) {
+    console.error("Failed to load training sessions", error);
+    return [];
+  }
+  return data.map(fromRow);
+}
+
+export async function getTraineeNames(): Promise<string[]> {
+  const { data, error } = await supabase
+    .from("training_sessions")
+    .select("trainee, trainee_normalized")
+    .order("trainee");
+
+  if (error || !data) {
+    console.error("Failed to load trainee names", error);
+    return [];
+  }
   const seen = new Map<string, string>();
-  data.sessions.forEach((s) => seen.set(normalizeName(s.trainee), s.trainee));
+  data.forEach((row) => seen.set(row.trainee_normalized, row.trainee));
   return [...seen.values()].sort((a, b) => a.localeCompare(b));
 }
 
@@ -72,8 +95,8 @@ export interface TraineeStats {
   averageSeconds: number;
 }
 
-export function getTraineeStats(trainee: string): TraineeStats | null {
-  const sessions = getTrainingSessions(trainee);
+export async function getTraineeStats(trainee: string): Promise<TraineeStats | null> {
+  const sessions = await getTrainingSessions(trainee);
   if (sessions.length === 0) return null;
   const bestSession = sessions.reduce((a, b) =>
     a.finalSeconds <= b.finalSeconds ? a : b,

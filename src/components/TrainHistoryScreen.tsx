@@ -1,8 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   getTraineeNames,
   getTraineeStats,
   getTrainingSessions,
+  type TraineeStats,
 } from "../training/storage";
 import type { TrainingDrill, TrainingSession } from "../training/types";
 import { HeroBackdrop } from "./HeroBackdrop";
@@ -24,14 +25,40 @@ function formatDate(iso: string): string {
 }
 
 export function TrainHistoryScreen({ onBack }: { onBack: () => void }) {
-  const names = useMemo(() => getTraineeNames(), []);
-  const [selected, setSelected] = useState(names[0] ?? "");
+  const [names, setNames] = useState<string[] | null>(null);
+  const [selected, setSelected] = useState("");
+  const [sessions, setSessions] = useState<TrainingSession[]>([]);
+  const [stats, setStats] = useState<TraineeStats | null>(null);
 
-  const sessions: TrainingSession[] = useMemo(
-    () => (selected ? getTrainingSessions(selected) : []),
-    [selected],
-  );
-  const stats = useMemo(() => (selected ? getTraineeStats(selected) : null), [selected]);
+  useEffect(() => {
+    let cancelled = false;
+    getTraineeNames().then((loaded) => {
+      if (cancelled) return;
+      setNames(loaded);
+      setSelected(loaded[0] ?? "");
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!selected) {
+      setSessions([]);
+      setStats(null);
+      return;
+    }
+    let cancelled = false;
+    getTrainingSessions(selected).then((loaded) => {
+      if (!cancelled) setSessions(loaded);
+    });
+    getTraineeStats(selected).then((loaded) => {
+      if (!cancelled) setStats(loaded);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [selected]);
 
   return (
     <HeroBackdrop>
@@ -41,7 +68,9 @@ export function TrainHistoryScreen({ onBack }: { onBack: () => void }) {
             Training History
           </h1>
 
-          {names.length === 0 ? (
+          {names === null ? (
+            <p className="text-center text-sm text-zinc-400">Loading…</p>
+          ) : names.length === 0 ? (
             <p className="text-center text-sm text-zinc-400">
               No sessions logged yet. Run a drill in Train Mode to start tracking.
             </p>

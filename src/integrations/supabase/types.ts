@@ -1,0 +1,101 @@
+export interface Database {
+  public: {
+    Tables: {
+      profiles: {
+        Row: {
+          id: string;
+          user_id: string;
+          display_name: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          display_name?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          display_name?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      match_results: {
+        Row: {
+          id: string;
+          match_id: string;
+          player_name: string;
+          player_name_normalized: string;
+          won: boolean;
+          recorded_by: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          match_id: string;
+          player_name: string;
+          player_name_normalized: string;
+          won: boolean;
+          recorded_by: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          match_id?: string;
+          player_name?: string;
+          player_name_normalized?: string;
+          won?: boolean;
+          recorded_by?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      training_sessions: {
+        Row: {
+          id: string;
+          recorded_by: string;
+          trainee: string;
+          trainee_normalized: string;
+          logged_at: string;
+          drill: unknown;
+          raw_seconds: number;
+          zone_misses: number;
+          complete_misses: number;
+          final_seconds: number;
+        };
+        Insert: {
+          id?: string;
+          recorded_by: string;
+          trainee: string;
+          trainee_normalized: string;
+          logged_at?: string;
+          drill: unknown;
+          raw_seconds: number;
+          zone_misses: number;
+          complete_misses: number;
+          final_seconds: number;
+        };
+        Update: {
+          id?: string;
+          recorded_by?: string;
+          trainee?: string;
+          trainee_normalized?: string;
+          logged_at?: string;
+          drill?: unknown;
+          raw_seconds?: number;
+          zone_misses?: number;
+          complete_misses?: number;
+          final_seconds?: number;
+        };
+        Relationships: [];
+      };
+    };
+    Views: Record<string, never>;
+    Functions: Record<string, never>;
+  };
+}

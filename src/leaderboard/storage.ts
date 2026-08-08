@@ -1,4 +1,4 @@
-const STORAGE_KEY = "range-roulette-leaderboard-v1";
+import { supabase } from "../integrations/supabase/client";
 
 /** Minimum completed matches before a player qualifies for the Best Win % ranking. */
 export const MIN_MATCHES_FOR_WIN_PCT = 3;
@@ -14,65 +14,64 @@ export interface LeaderboardStats extends LeaderboardEntry {
   winPct: number;
 }
 
-interface LeaderboardData {
-  entries: Record<string, LeaderboardEntry>;
-  recordedMatchIds: string[];
-}
-
-function emptyData(): LeaderboardData {
-  return { entries: {}, recordedMatchIds: [] };
+export interface LeaderboardBoards {
+  mostWins: LeaderboardStats[];
+  bestWinPct: LeaderboardStats[];
+  notYetQualified: LeaderboardStats[];
 }
 
 function normalizeName(name: string): string {
   return name.trim().toLowerCase();
 }
 
-function load(): LeaderboardData {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return emptyData();
-    const parsed = JSON.parse(raw) as Partial<LeaderboardData>;
-    return {
-      entries: parsed.entries ?? {},
-      recordedMatchIds: parsed.recordedMatchIds ?? [],
-    };
-  } catch {
-    return emptyData();
-  }
-}
-
-function save(data: LeaderboardData) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-}
-
-/** Records the outcome of a completed match. Safe to call more than once for the same matchId — later calls are no-ops. */
-export function recordMatchResult(
+/** Records the outcome of a completed match to the shared leaderboard. Safe to call more than once for the same matchId — later calls are no-ops. */
+export async function recordMatchResult(
   matchId: string,
   playerNames: string[],
   winnerName: string,
+  recordedBy: string,
 ) {
-  const data = load();
-  if (data.recordedMatchIds.includes(matchId)) return;
-
   const winnerKey = normalizeName(winnerName);
-  playerNames.forEach((name) => {
-    const key = normalizeName(name);
-    const existing = data.entries[key] ?? { name, wins: 0, losses: 0 };
-    const won = key === winnerKey;
-    data.entries[key] = {
-      name,
-      wins: existing.wins + (won ? 1 : 0),
-      losses: existing.losses + (won ? 0 : 1),
-    };
-  });
+  const rows = playerNames.map((name) => ({
+    match_id: matchId,
+    player_name: name,
+    player_name_normalized: normalizeName(name),
+    won: normalizeName(name) === winnerKey,
+    recorded_by: recordedBy,
+  }));
 
-  data.recordedMatchIds.push(matchId);
-  save(data);
+  const { error } = await supabase
+    .from("match_results")
+    .upsert(rows, { onConflict: "match_id,player_name_normalized", ignoreDuplicates: true });
+
+  if (error) console.error("Failed to record match result", error);
 }
 
-export function getLeaderboardStats() {
-  const data = load();
-  const all: LeaderboardStats[] = Object.values(data.entries).map((e) => {
+export async function getLeaderboardStats(): Promise<LeaderboardBoards> {
+  const { data, error } = await supabase
+    .from("match_results")
+    .select("player_name, player_name_normalized, won");
+
+  if (error || !data) {
+    console.error("Failed to load leaderboard", error);
+    return { mostWins: [], bestWinPct: [], notYetQualified: [] };
+  }
+
+  const entries = new Map<string, LeaderboardEntry>();
+  data.forEach((row) => {
+    const existing = entries.get(row.player_name_normalized) ?? {
+      name: row.player_name,
+      wins: 0,
+      losses: 0,
+    };
+    entries.set(row.player_name_normalized, {
+      name: row.player_name,
+      wins: existing.wins + (row.won ? 1 : 0),
+      losses: existing.losses + (row.won ? 0 : 1),
+    });
+  });
+
+  const all: LeaderboardStats[] = [...entries.values()].map((e) => {
     const matchesPlayed = e.wins + e.losses;
     return {
       ...e,

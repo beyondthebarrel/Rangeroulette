@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useAuth } from "../auth/AuthContext";
 import { CATEGORY_ORDER, SCORING, type CategoryKey } from "../data/cards";
 import { getLastTraineeName, recordTrainingSession, setLastTraineeName } from "../training/storage";
 import type { TrainingDrill } from "../training/types";
@@ -31,15 +32,17 @@ export function TrainScreen({
   onBack: () => void;
   onOpenHistory: () => void;
 }) {
+  const { user } = useAuth();
   const { drill, drawNew } = useTrainingDrill();
   const [trainee, setTrainee] = useState(() => getLastTraineeName());
   const [rawSeconds, setRawSeconds] = useState<number | null>(null);
   const [zoneMisses, setZoneMisses] = useState(0);
   const [completeMisses, setCompleteMisses] = useState(0);
   const [lastLogged, setLastLogged] = useState<number | null>(null);
+  const [logging, setLogging] = useState(false);
 
   const parSeconds = drill.time.def.parSeconds;
-  const canLog = trainee.trim().length > 0 && rawSeconds != null;
+  const canLog = trainee.trim().length > 0 && rawSeconds != null && !logging && !!user;
 
   function resetScoreFields() {
     setRawSeconds(null);
@@ -53,8 +56,8 @@ export function TrainScreen({
     setLastLogged(null);
   }
 
-  function handleLog() {
-    if (!canLog || rawSeconds == null) return;
+  async function handleLog() {
+    if (!canLog || rawSeconds == null || !user) return;
     const name = trainee.trim();
     setLastTraineeName(name);
 
@@ -76,14 +79,19 @@ export function TrainScreen({
     };
 
     const finalSeconds = computeFinalSeconds(rawSeconds, zoneMisses, completeMisses, parSeconds);
-    recordTrainingSession({
-      trainee: name,
-      drill: drillSnapshot,
-      rawSeconds,
-      zoneMisses,
-      completeMisses,
-      finalSeconds,
-    });
+    setLogging(true);
+    await recordTrainingSession(
+      {
+        trainee: name,
+        drill: drillSnapshot,
+        rawSeconds,
+        zoneMisses,
+        completeMisses,
+        finalSeconds,
+      },
+      user.id,
+    );
+    setLogging(false);
 
     setLastLogged(finalSeconds);
     drawNew();
@@ -162,7 +170,7 @@ export function TrainScreen({
             onClick={handleLog}
             className="w-full rounded-md bg-red-700 px-4 py-3 font-semibold uppercase tracking-wide text-white enabled:hover:bg-red-600 disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-500"
           >
-            Log Result
+            {logging ? "Logging…" : "Log Result"}
           </button>
         </Panel>
 

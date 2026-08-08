@@ -1,13 +1,27 @@
-import { useMemo } from "react";
-import { getLeaderboardStats, MIN_MATCHES_FOR_WIN_PCT } from "../leaderboard/storage";
+import { useEffect, useState } from "react";
+import {
+  getLeaderboardStats,
+  MIN_MATCHES_FOR_WIN_PCT,
+  type LeaderboardBoards,
+} from "../leaderboard/storage";
 import { HeroBackdrop } from "./HeroBackdrop";
 import { TitleFrame } from "./TitleFrame";
 
+const EMPTY_BOARDS: LeaderboardBoards = { mostWins: [], bestWinPct: [], notYetQualified: [] };
+
 export function LeaderboardScreen({ onBack }: { onBack: () => void }) {
-  const { mostWins, bestWinPct, notYetQualified } = useMemo(
-    () => getLeaderboardStats(),
-    [],
-  );
+  const [boards, setBoards] = useState<LeaderboardBoards | null>(null);
+  const { mostWins, bestWinPct, notYetQualified } = boards ?? EMPTY_BOARDS;
+
+  useEffect(() => {
+    let cancelled = false;
+    getLeaderboardStats().then((stats) => {
+      if (!cancelled) setBoards(stats);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <HeroBackdrop>
@@ -16,7 +30,9 @@ export function LeaderboardScreen({ onBack }: { onBack: () => void }) {
           Leaderboard
         </h1>
 
-        {mostWins.length === 0 ? (
+        {boards === null ? (
+          <p className="text-center text-sm text-zinc-400">Loading…</p>
+        ) : mostWins.length === 0 ? (
           <p className="text-center text-sm text-zinc-400">
             No matches recorded yet. Play a match to start the leaderboard.
           </p>

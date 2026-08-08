@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useAuth } from "./auth/AuthContext";
+import { AuthScreen } from "./components/AuthScreen";
 import { BillDrillScreen } from "./components/BillDrillScreen";
 import { Header } from "./components/Header";
 import { LeaderboardScreen } from "./components/LeaderboardScreen";
@@ -39,6 +41,15 @@ function GameScreen({ onBackToModes }: { onBackToModes: () => void }) {
 
 function App() {
   const [view, setView] = useState<View>("modeSelect");
+  const { session, loading } = useAuth();
+
+  if (loading) {
+    return <div className="flex min-h-svh items-center justify-center bg-black text-zinc-400">Loading…</div>;
+  }
+
+  if (!session) {
+    return <AuthScreen />;
+  }
 
   return (
     <GameProvider>
