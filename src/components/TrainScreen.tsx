@@ -53,6 +53,7 @@ export function TrainScreen({
   const [saveName, setSaveName] = useState("");
   const [showSave, setShowSave] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [savedDrillError, setSavedDrillError] = useState<string | null>(null);
 
   const refreshSaved = useCallback(async () => {
     if (!user) return;
@@ -106,24 +107,33 @@ export function TrainScreen({
     resetScoreFields();
     setLastLogged(null);
     setLogError(null);
+    setSavedDrillError(null);
   }
 
   async function handleSaveDrill() {
     if (!user || saveName.trim().length === 0) return;
     setSaving(true);
+    setSavedDrillError(null);
     const saved = await saveDrill(user.id, saveName.trim(), activeDrill);
     setSaving(false);
-    if (saved) {
-      setSaveName("");
-      setShowSave(false);
-      await refreshSaved();
-      setSelectedSavedId(saved.id);
+    if (!saved) {
+      setSavedDrillError("Couldn't save that drill — check your connection and try again.");
+      return;
     }
+    setSaveName("");
+    setShowSave(false);
+    await refreshSaved();
+    setSelectedSavedId(saved.id);
   }
 
   async function handleDeleteSaved() {
     if (!selectedSaved) return;
-    await deleteSavedDrill(selectedSaved.id);
+    setSavedDrillError(null);
+    const deleted = await deleteSavedDrill(selectedSaved.id);
+    if (!deleted) {
+      setSavedDrillError("Couldn't delete that drill — check your connection and try again.");
+      return;
+    }
     setSelectedSavedId("");
     await refreshSaved();
   }
@@ -183,7 +193,10 @@ export function TrainScreen({
             </div>
             <div className="flex gap-2">
               <button
-                onClick={() => setShowSave((v) => !v)}
+                onClick={() => {
+                  setShowSave((v) => !v);
+                  setSavedDrillError(null);
+                }}
                 className="rounded border border-zinc-600 px-3 py-1 text-xs uppercase tracking-wide text-zinc-300 hover:bg-zinc-800"
               >
                 Save Drill
@@ -204,6 +217,7 @@ export function TrainScreen({
                 setSelectedSavedId(e.target.value);
                 resetScoreFields();
                 setLastLogged(null);
+                setSavedDrillError(null);
               }}
               className="flex-1 rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white focus:border-red-600 focus:outline-none"
             >
@@ -240,6 +254,10 @@ export function TrainScreen({
                 {saving ? "Saving…" : "Save"}
               </button>
             </div>
+          )}
+
+          {savedDrillError != null && (
+            <div className="text-sm text-amber-400">{savedDrillError}</div>
           )}
 
           <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
