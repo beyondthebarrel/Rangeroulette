@@ -7,16 +7,16 @@ export function PlayingCard({
   className = "",
   faceDown = false,
   tappable = false,
-  onReveal,
+  onRevealChange,
   backImage = "/card-back.jpg",
 }: {
   cardId: string;
   overlay?: ReactNode;
   className?: string;
   faceDown?: boolean;
-  /** When true and faceDown, the card stays face down until tapped. */
+  /** When true and faceDown, tapping flips the card — tap again to flip it back down. */
   tappable?: boolean;
-  onReveal?: () => void;
+  onRevealChange?: (revealed: boolean) => void;
   /** Back-of-card art. Defaults to the standard Range Roulette back. */
   backImage?: string;
 }) {
@@ -37,12 +37,18 @@ export function PlayingCard({
   }, [cardId, faceDown]);
 
   const showFace = revealed || tapped;
-  const isTappable = tappable && faceDown && !tapped;
+  const isTappable = tappable && faceDown;
 
   function handleTap() {
     if (!isTappable) return;
-    setTapped(true);
-    onReveal?.();
+    // Compute from the closed-over `tapped` rather than the setTapped
+    // updater form — calling onRevealChange (a parent setState) inside a
+    // state updater is a side effect updaters must stay free of; React can
+    // re-invoke them, which is exactly what warns "Cannot update a
+    // component while rendering a different component."
+    const next = !tapped;
+    setTapped(next);
+    onRevealChange?.(next);
   }
 
   return (
@@ -61,7 +67,7 @@ export function PlayingCard({
             }
           : undefined
       }
-      aria-label={isTappable ? "Tap to reveal card" : undefined}
+      aria-label={isTappable ? (tapped ? "Tap to hide card" : "Tap to reveal card") : undefined}
     >
       <div
         className="relative aspect-[552/812] w-full transition-transform duration-500 ease-out [transform-style:preserve-3d]"
@@ -76,6 +82,13 @@ export function PlayingCard({
             onError={onError}
           />
           {overlay}
+          {isTappable && tapped && (
+            <div className="absolute inset-x-0 bottom-0 flex items-center justify-center bg-black/80 py-1.5 text-center">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-red-500">
+                Tap to Hide
+              </span>
+            </div>
+          )}
         </div>
         <div
           className="absolute inset-0 overflow-hidden rounded-xl shadow-lg [backface-visibility:hidden]"
@@ -88,7 +101,7 @@ export function PlayingCard({
             draggable={false}
             onError={backOnError}
           />
-          {isTappable && (
+          {isTappable && !tapped && (
             <div className="absolute inset-x-0 bottom-0 flex items-center justify-center bg-black/80 py-1.5 text-center">
               <span className="text-[10px] font-semibold uppercase tracking-wider text-red-500">
                 Tap to Reveal

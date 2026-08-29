@@ -73,9 +73,17 @@ export function PlayChallengesScreen() {
                         }`}
                         faceDown
                         tappable
-                        onReveal={() =>
-                          setRevealedIds((prev) => new Set(prev).add(c.instanceId))
-                        }
+                        onRevealChange={(isRevealed) => {
+                          setRevealedIds((prev) => {
+                            const next = new Set(prev);
+                            if (isRevealed) next.add(c.instanceId);
+                            else next.delete(c.instanceId);
+                            return next;
+                          });
+                          if (!isRevealed) {
+                            setPlayFor((prev) => (prev === c.instanceId ? null : prev));
+                          }
+                        }}
                       />
                       {isRevealed && (
                         <button

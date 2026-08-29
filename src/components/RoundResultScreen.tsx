@@ -63,7 +63,7 @@ export function RoundResultScreen() {
                   className="w-20"
                   faceDown
                   tappable
-                  onReveal={() => setChallengeRevealed(true)}
+                  onRevealChange={setChallengeRevealed}
                   backImage="/card-back-challenge.jpg"
                 />
                 <span className="font-semibold text-white">
