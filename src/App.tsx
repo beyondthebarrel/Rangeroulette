@@ -10,12 +10,14 @@ import { PlayChallengesScreen } from "./components/PlayChallengesScreen";
 import { PlayerSetup } from "./components/PlayerSetup";
 import { RoundBuildScreen } from "./components/RoundBuildScreen";
 import { RoundResultScreen } from "./components/RoundResultScreen";
+import { SafetyChecklistScreen } from "./components/SafetyChecklistScreen";
 import { ScoreScreen } from "./components/ScoreScreen";
 import { TrainHistoryScreen } from "./components/TrainHistoryScreen";
 import { TrainScreen } from "./components/TrainScreen";
 import { GameProvider, useGame } from "./game/GameContext";
 
-type View = "modeSelect" | "game" | "train" | "trainHistory" | "leaderboard";
+type View = "modeSelect" | "safetyCheck" | "game" | "train" | "trainHistory" | "leaderboard";
+type PendingMode = "game" | "train";
 
 function GameScreen({ onBackToModes }: { onBackToModes: () => void }) {
   const { state } = useGame();
@@ -41,6 +43,7 @@ function GameScreen({ onBackToModes }: { onBackToModes: () => void }) {
 
 function App() {
   const [view, setView] = useState<View>("modeSelect");
+  const [pendingMode, setPendingMode] = useState<PendingMode | null>(null);
   const { session, loading } = useAuth();
 
   if (loading) {
@@ -51,15 +54,30 @@ function App() {
     return <AuthScreen />;
   }
 
+  function selectMode(mode: PendingMode) {
+    setPendingMode(mode);
+    setView("safetyCheck");
+  }
+
   return (
     <GameProvider>
       <div className="min-h-svh bg-zinc-950">
         <Header />
         {view === "modeSelect" && (
           <ModeSelectScreen
-            onSelectGame={() => setView("game")}
-            onSelectTrain={() => setView("train")}
+            onSelectGame={() => selectMode("game")}
+            onSelectTrain={() => selectMode("train")}
             onOpenLeaderboard={() => setView("leaderboard")}
+          />
+        )}
+        {view === "safetyCheck" && pendingMode && (
+          <SafetyChecklistScreen
+            mode={pendingMode}
+            onAcknowledge={() => setView(pendingMode)}
+            onBack={() => {
+              setView("modeSelect");
+              setPendingMode(null);
+            }}
           />
         )}
         {view === "game" && <GameScreen onBackToModes={() => setView("modeSelect")} />}
