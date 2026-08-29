@@ -40,6 +40,7 @@ export function TrainScreen({
   const [completeMisses, setCompleteMisses] = useState(0);
   const [lastLogged, setLastLogged] = useState<number | null>(null);
   const [logging, setLogging] = useState(false);
+  const [logError, setLogError] = useState<string | null>(null);
 
   const parSeconds = drill.time.def.parSeconds;
   const canLog = trainee.trim().length > 0 && rawSeconds != null && !logging && !!user;
@@ -54,6 +55,7 @@ export function TrainScreen({
     drawNew();
     resetScoreFields();
     setLastLogged(null);
+    setLogError(null);
   }
 
   async function handleLog() {
@@ -80,7 +82,9 @@ export function TrainScreen({
 
     const finalSeconds = computeFinalSeconds(rawSeconds, zoneMisses, completeMisses, parSeconds);
     setLogging(true);
-    await recordTrainingSession(
+    setLogError(null);
+    setLastLogged(null);
+    const saved = await recordTrainingSession(
       {
         trainee: name,
         drill: drillSnapshot,
@@ -92,6 +96,11 @@ export function TrainScreen({
       user.id,
     );
     setLogging(false);
+
+    if (!saved) {
+      setLogError("Couldn't save that result — check your connection and try again.");
+      return;
+    }
 
     setLastLogged(finalSeconds);
     drawNew();
@@ -158,6 +167,10 @@ export function TrainScreen({
               onChange={setCompleteMisses}
             />
           </div>
+
+          {logError != null && (
+            <div className="text-sm text-amber-400">{logError}</div>
+          )}
 
           {lastLogged != null && (
             <div className="text-sm text-red-400">
