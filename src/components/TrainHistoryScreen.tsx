@@ -111,7 +111,11 @@ export function TrainHistoryScreen({ onBack }: { onBack: () => void }) {
               </div>
             </div>
             <div className="text-xs text-zinc-500">
-              Best run: {drillSummary(stats.bestSession.drill)}
+              Best run:{" "}
+              {stats.bestSession.savedDrillName && (
+                <span className="text-red-400">{stats.bestSession.savedDrillName} · </span>
+              )}
+              {drillSummary(stats.bestSession.drill)}
             </div>
           </Panel>
         )}
@@ -131,7 +135,12 @@ export function TrainHistoryScreen({ onBack }: { onBack: () => void }) {
                     </span>
                     <span className="text-xs text-zinc-500">{formatDate(s.loggedAt)}</span>
                   </div>
-                  <div className="text-xs text-zinc-400">{drillSummary(s.drill)}</div>
+                  <div className="text-xs text-zinc-400">
+                    {s.savedDrillName && (
+                      <span className="text-red-400">{s.savedDrillName} · </span>
+                    )}
+                    {drillSummary(s.drill)}
+                  </div>
                   {(s.zoneMisses > 0 || s.completeMisses > 0) && (
                     <div className="text-xs text-amber-400">
                       {s.zoneMisses > 0 && `${s.zoneMisses} zone miss${s.zoneMisses > 1 ? "es" : ""}`}

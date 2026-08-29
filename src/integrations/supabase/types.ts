@@ -67,6 +67,7 @@ export interface Database {
           zone_misses: number;
           complete_misses: number;
           final_seconds: number;
+          saved_drill_name: string | null;
         };
         Insert: {
           id?: string;
@@ -79,6 +80,7 @@ export interface Database {
           zone_misses: number;
           complete_misses: number;
           final_seconds: number;
+          saved_drill_name?: string | null;
         };
         Update: {
           id?: string;
@@ -91,6 +93,7 @@ export interface Database {
           zone_misses?: number;
           complete_misses?: number;
           final_seconds?: number;
+          saved_drill_name?: string | null;
         };
         Relationships: [];
       };

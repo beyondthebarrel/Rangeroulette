@@ -16,6 +16,7 @@ function fromRow(row: {
   zone_misses: number;
   complete_misses: number;
   final_seconds: number;
+  saved_drill_name: string | null;
 }): TrainingSession {
   return {
     id: row.id,
@@ -26,6 +27,7 @@ function fromRow(row: {
     zoneMisses: row.zone_misses,
     completeMisses: row.complete_misses,
     finalSeconds: row.final_seconds,
+    savedDrillName: row.saved_drill_name ?? undefined,
   };
 }
 
@@ -44,6 +46,7 @@ export async function recordTrainingSession(
       zone_misses: session.zoneMisses,
       complete_misses: session.completeMisses,
       final_seconds: session.finalSeconds,
+      saved_drill_name: session.savedDrillName ?? null,
     })
     .select()
     .single();

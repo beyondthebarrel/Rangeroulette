@@ -19,4 +19,6 @@ export interface TrainingSession {
   zoneMisses: number;
   completeMisses: number;
   finalSeconds: number;
+  /** Name of the saved drill this was logged against, if any (not the current name — a snapshot from log time). */
+  savedDrillName?: string;
 }

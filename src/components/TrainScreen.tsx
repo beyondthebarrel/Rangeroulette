@@ -155,6 +155,7 @@ export function TrainScreen({
         zoneMisses,
         completeMisses,
         finalSeconds,
+        savedDrillName: selectedSaved?.name,
       },
       user.id,
     );
