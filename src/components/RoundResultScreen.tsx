@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useGame } from "../game/GameContext";
 import { ActiveWhoopsiePanel } from "./ActiveWhoopsiePanel";
 import { Panel } from "./Panel";
@@ -6,6 +7,7 @@ import { PlayingCard } from "./PlayingCard";
 export function RoundResultScreen() {
   const { state, dispatch } = useGame();
   const result = state.lastRoundResult;
+  const [challengeRevealed, setChallengeRevealed] = useState(false);
 
   if (!result) return null;
 
@@ -56,9 +58,17 @@ export function RoundResultScreen() {
             </div>
             {result.awardedChallenge && (
               <div className="flex items-center gap-3">
-                <PlayingCard cardId={result.awardedChallenge.def.id} className="w-20" />
+                <PlayingCard
+                  cardId={result.awardedChallenge.def.id}
+                  className="w-20"
+                  faceDown
+                  tappable
+                  onReveal={() => setChallengeRevealed(true)}
+                />
                 <span className="font-semibold text-white">
-                  {result.awardedChallenge.def.text}
+                  {challengeRevealed
+                    ? result.awardedChallenge.def.text
+                    : `Pass the phone to ${winner.name} — tap the card to reveal it.`}
                 </span>
               </div>
             )}
