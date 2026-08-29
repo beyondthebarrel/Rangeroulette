@@ -56,10 +56,12 @@ export function ModeSelectScreen({
   onSelectGame,
   onSelectTrain,
   onOpenLeaderboard,
+  onOpenRules,
 }: {
   onSelectGame: () => void;
   onSelectTrain: () => void;
   onOpenLeaderboard: () => void;
+  onOpenRules: () => void;
 }) {
   return (
     <HeroBackdrop>
@@ -85,12 +87,20 @@ export function ModeSelectScreen({
           />
         </div>
 
-        <button
-          onClick={onOpenLeaderboard}
-          className="w-full rounded border border-zinc-700 px-3 py-1 text-xs text-zinc-300 hover:bg-zinc-900 sm:py-2 sm:text-sm"
-        >
-          Leaderboard
-        </button>
+        <div className="flex w-full gap-2">
+          <button
+            onClick={onOpenRules}
+            className="flex-1 rounded border border-zinc-700 px-3 py-1 text-xs text-zinc-300 hover:bg-zinc-900 sm:py-2 sm:text-sm"
+          >
+            How to Play
+          </button>
+          <button
+            onClick={onOpenLeaderboard}
+            className="flex-1 rounded border border-zinc-700 px-3 py-1 text-xs text-zinc-300 hover:bg-zinc-900 sm:py-2 sm:text-sm"
+          >
+            Leaderboard
+          </button>
+        </div>
 
         <RetryImage
           src="/btb-logo.png"

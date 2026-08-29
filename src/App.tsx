@@ -10,13 +10,22 @@ import { PlayChallengesScreen } from "./components/PlayChallengesScreen";
 import { PlayerSetup } from "./components/PlayerSetup";
 import { RoundBuildScreen } from "./components/RoundBuildScreen";
 import { RoundResultScreen } from "./components/RoundResultScreen";
+import { RulesIntroScreen } from "./components/RulesIntroScreen";
 import { SafetyChecklistScreen } from "./components/SafetyChecklistScreen";
 import { ScoreScreen } from "./components/ScoreScreen";
 import { TrainHistoryScreen } from "./components/TrainHistoryScreen";
 import { TrainScreen } from "./components/TrainScreen";
 import { GameProvider, useGame } from "./game/GameContext";
+import { hasSeenRulesIntro, markRulesIntroSeen } from "./onboarding/rulesIntro";
 
-type View = "modeSelect" | "safetyCheck" | "game" | "train" | "trainHistory" | "leaderboard";
+type View =
+  | "modeSelect"
+  | "rulesIntro"
+  | "safetyCheck"
+  | "game"
+  | "train"
+  | "trainHistory"
+  | "leaderboard";
 type PendingMode = "game" | "train";
 
 function GameScreen({ onBackToModes }: { onBackToModes: () => void }) {
@@ -42,7 +51,9 @@ function GameScreen({ onBackToModes }: { onBackToModes: () => void }) {
 }
 
 function App() {
-  const [view, setView] = useState<View>("modeSelect");
+  const [view, setView] = useState<View>(() =>
+    hasSeenRulesIntro() ? "modeSelect" : "rulesIntro",
+  );
   const [pendingMode, setPendingMode] = useState<PendingMode | null>(null);
   const { session, loading } = useAuth();
 
@@ -59,15 +70,22 @@ function App() {
     setView("safetyCheck");
   }
 
+  function closeRulesIntro() {
+    markRulesIntroSeen();
+    setView("modeSelect");
+  }
+
   return (
     <GameProvider>
       <div className="min-h-svh bg-zinc-950">
         <Header />
+        {view === "rulesIntro" && <RulesIntroScreen onDone={closeRulesIntro} />}
         {view === "modeSelect" && (
           <ModeSelectScreen
             onSelectGame={() => selectMode("game")}
             onSelectTrain={() => selectMode("train")}
             onOpenLeaderboard={() => setView("leaderboard")}
+            onOpenRules={() => setView("rulesIntro")}
           />
         )}
         {view === "safetyCheck" && pendingMode && (
