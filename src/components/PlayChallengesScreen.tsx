@@ -6,6 +6,7 @@ import { PlayingCard } from "./PlayingCard";
 export function PlayChallengesScreen() {
   const { state, dispatch } = useGame();
   const [playFor, setPlayFor] = useState<string | null>(null);
+  const [revealedIds, setRevealedIds] = useState<Set<string>>(new Set());
 
   const playersWithCards = state.players.filter((p) => p.hand.length > 0);
 
@@ -57,22 +58,39 @@ export function PlayChallengesScreen() {
             <div key={p.id} className="flex flex-col gap-2">
               <span className="text-sm text-white">{p.name}</span>
               <div className="flex flex-wrap gap-2">
-                {p.hand.map((c) => (
-                  <button
-                    key={c.instanceId}
-                    onClick={() =>
-                      setPlayFor(playFor === c.instanceId ? null : c.instanceId)
-                    }
-                    className={`w-16 shrink-0 rounded-lg transition ${
-                      playFor === c.instanceId
-                        ? "ring-2 ring-red-500"
-                        : "hover:ring-2 hover:ring-red-800"
-                    }`}
-                    title={c.def.text}
-                  >
-                    <PlayingCard cardId={c.def.id} />
-                  </button>
-                ))}
+                {p.hand.map((c) => {
+                  const isRevealed = revealedIds.has(c.instanceId);
+                  return (
+                    <div key={c.instanceId} className="flex w-16 shrink-0 flex-col gap-1">
+                      <PlayingCard
+                        cardId={c.def.id}
+                        className={`rounded-lg transition ${
+                          playFor === c.instanceId
+                            ? "ring-2 ring-red-500"
+                            : isRevealed
+                              ? "hover:ring-2 hover:ring-red-800"
+                              : ""
+                        }`}
+                        faceDown
+                        tappable
+                        onReveal={() =>
+                          setRevealedIds((prev) => new Set(prev).add(c.instanceId))
+                        }
+                      />
+                      {isRevealed && (
+                        <button
+                          onClick={() =>
+                            setPlayFor(playFor === c.instanceId ? null : c.instanceId)
+                          }
+                          title={c.def.text}
+                          className="rounded bg-red-800 px-1 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white hover:bg-red-700"
+                        >
+                          Play
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
               {p.hand.map(
                 (c) =>
