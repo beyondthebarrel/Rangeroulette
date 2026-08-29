@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import {
+  deleteTrainingSession,
   getTraineeNames,
   getTraineeStats,
   getTrainingSessions,
@@ -29,6 +30,9 @@ export function TrainHistoryScreen({ onBack }: { onBack: () => void }) {
   const [selected, setSelected] = useState("");
   const [sessions, setSessions] = useState<TrainingSession[]>([]);
   const [stats, setStats] = useState<TraineeStats | null>(null);
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -59,6 +63,32 @@ export function TrainHistoryScreen({ onBack }: { onBack: () => void }) {
       cancelled = true;
     };
   }, [selected]);
+
+  async function handleDelete(id: string) {
+    setDeletingId(id);
+    setDeleteError(null);
+    const ok = await deleteTrainingSession(id);
+    setDeletingId(null);
+    setConfirmingId(null);
+
+    if (!ok) {
+      setDeleteError("Couldn't delete that session — check your connection and try again.");
+      return;
+    }
+
+    const [loadedSessions, loadedStats, loadedNames] = await Promise.all([
+      getTrainingSessions(selected),
+      getTraineeStats(selected),
+      getTraineeNames(),
+    ]);
+    setSessions(loadedSessions);
+    setStats(loadedStats);
+    setNames(loadedNames);
+    // That may have been the trainee's last session — fall back if they've dropped off the list.
+    if (!loadedNames.includes(selected)) {
+      setSelected(loadedNames[0] ?? "");
+    }
+  }
 
   return (
     <HeroBackdrop>
@@ -123,17 +153,53 @@ export function TrainHistoryScreen({ onBack }: { onBack: () => void }) {
         {sessions.length > 0 && (
           <Panel>
             <div className="text-sm font-semibold text-zinc-300">Session History</div>
+            {deleteError != null && (
+              <div className="text-xs text-amber-400">{deleteError}</div>
+            )}
             <ul className="flex flex-col gap-2">
               {sessions.map((s) => (
                 <li
                   key={s.id}
                   className="rounded-lg border border-red-900/40 bg-zinc-900/60 p-3"
                 >
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-2">
                     <span className="font-mono text-lg text-white">
                       {s.finalSeconds.toFixed(2)}s
                     </span>
-                    <span className="text-xs text-zinc-500">{formatDate(s.loggedAt)}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-zinc-500">{formatDate(s.loggedAt)}</span>
+                      {confirmingId === s.id ? (
+                        <span className="flex items-center gap-1 text-xs">
+                          <span className="text-zinc-400">Delete?</span>
+                          <button
+                            onClick={() => handleDelete(s.id)}
+                            disabled={deletingId === s.id}
+                            className="rounded bg-red-700 px-1.5 py-0.5 text-white hover:bg-red-600 disabled:opacity-60"
+                          >
+                            {deletingId === s.id ? "…" : "Yes"}
+                          </button>
+                          <button
+                            onClick={() => setConfirmingId(null)}
+                            disabled={deletingId === s.id}
+                            className="rounded bg-zinc-700 px-1.5 py-0.5 text-white hover:bg-zinc-600"
+                          >
+                            Cancel
+                          </button>
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            setConfirmingId(s.id);
+                            setDeleteError(null);
+                          }}
+                          aria-label="Delete session"
+                          title="Delete session"
+                          className="text-zinc-500 hover:text-red-400"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <div className="text-xs text-zinc-400">
                     {s.savedDrillName && (

@@ -92,6 +92,28 @@ export async function getTrainingSessions(trainee?: string): Promise<TrainingSes
   return data.map(fromRow);
 }
 
+export async function deleteTrainingSession(id: string): Promise<boolean> {
+  // .select() so we get the deleted row(s) back — without it, Postgres/PostgREST
+  // reports success with zero rows affected when RLS blocks the delete (e.g. the
+  // grant/policy migration hasn't been applied yet), rather than an error, which
+  // would otherwise look like a successful delete that silently did nothing.
+  const { data, error } = await supabase
+    .from("training_sessions")
+    .delete()
+    .eq("id", id)
+    .select();
+
+  if (error) {
+    console.error("Failed to delete training session", error);
+    return false;
+  }
+  if (!data || data.length === 0) {
+    console.error("Failed to delete training session: no rows affected");
+    return false;
+  }
+  return true;
+}
+
 export async function getTraineeNames(): Promise<string[]> {
   const { data, error } = await supabase
     .from("training_sessions")
