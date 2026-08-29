@@ -1,6 +1,12 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
 import { CATEGORY_ORDER, SCORING, type CategoryKey } from "../data/cards";
+import {
+  deleteSavedDrill,
+  listSavedDrills,
+  saveDrill,
+  type SavedDrill,
+} from "../training/savedDrills";
 import { getLastTraineeName, recordTrainingSession, setLastTraineeName } from "../training/storage";
 import type { TrainingDrill } from "../training/types";
 import { useTrainingDrill } from "../training/useTrainingDrill";
@@ -41,7 +47,50 @@ export function TrainScreen({
   const [lastLogged, setLastLogged] = useState<number | null>(null);
   const [logging, setLogging] = useState(false);
 
-  const parSeconds = drill.time.def.parSeconds;
+  const [savedDrills, setSavedDrills] = useState<SavedDrill[]>([]);
+  const [selectedSavedId, setSelectedSavedId] = useState("");
+  const [saveName, setSaveName] = useState("");
+  const [showSave, setShowSave] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const refreshSaved = useCallback(async () => {
+    if (!user) return;
+    setSavedDrills(await listSavedDrills(user.id));
+  }, [user]);
+
+  useEffect(() => {
+    refreshSaved();
+  }, [refreshSaved]);
+
+  const selectedSaved = savedDrills.find((d) => d.id === selectedSavedId) ?? null;
+
+  const randomSnapshot: TrainingDrill = {
+    time: { cardId: drill.time.def.id, label: drill.time.def.label, detail: drill.time.def.detail },
+    distance: {
+      cardId: drill.distance.def.id,
+      label: drill.distance.def.label,
+      detail: drill.distance.def.detail,
+    },
+    startPosition: {
+      cardId: drill.startPosition.def.id,
+      label: drill.startPosition.def.label,
+      detail: drill.startPosition.def.detail,
+    },
+    target: {
+      cardId: drill.target.def.id,
+      label: drill.target.def.label,
+      detail: drill.target.def.detail,
+    },
+    courseOfFire: {
+      cardId: drill.courseOfFire.def.id,
+      label: drill.courseOfFire.def.label,
+      detail: drill.courseOfFire.def.detail,
+    },
+    parSeconds: drill.time.def.parSeconds,
+  };
+
+  const activeDrill: TrainingDrill = selectedSaved ? selectedSaved.drill : randomSnapshot;
+  const parSeconds = activeDrill.parSeconds;
   const canLog = trainee.trim().length > 0 && rawSeconds != null && !logging && !!user;
 
   function resetScoreFields() {
@@ -51,9 +100,30 @@ export function TrainScreen({
   }
 
   function handleNewDrill() {
+    setSelectedSavedId("");
     drawNew();
     resetScoreFields();
     setLastLogged(null);
+  }
+
+  async function handleSaveDrill() {
+    if (!user || saveName.trim().length === 0) return;
+    setSaving(true);
+    const saved = await saveDrill(user.id, saveName.trim(), activeDrill);
+    setSaving(false);
+    if (saved) {
+      setSaveName("");
+      setShowSave(false);
+      await refreshSaved();
+      setSelectedSavedId(saved.id);
+    }
+  }
+
+  async function handleDeleteSaved() {
+    if (!selectedSaved) return;
+    await deleteSavedDrill(selectedSaved.id);
+    setSelectedSavedId("");
+    await refreshSaved();
   }
 
   async function handleLog() {
@@ -61,29 +131,12 @@ export function TrainScreen({
     const name = trainee.trim();
     setLastTraineeName(name);
 
-    const drillSnapshot: TrainingDrill = {
-      time: { cardId: drill.time.def.id, label: drill.time.def.label, detail: drill.time.def.detail },
-      distance: { cardId: drill.distance.def.id, label: drill.distance.def.label, detail: drill.distance.def.detail },
-      startPosition: {
-        cardId: drill.startPosition.def.id,
-        label: drill.startPosition.def.label,
-        detail: drill.startPosition.def.detail,
-      },
-      target: { cardId: drill.target.def.id, label: drill.target.def.label, detail: drill.target.def.detail },
-      courseOfFire: {
-        cardId: drill.courseOfFire.def.id,
-        label: drill.courseOfFire.def.label,
-        detail: drill.courseOfFire.def.detail,
-      },
-      parSeconds,
-    };
-
     const finalSeconds = computeFinalSeconds(rawSeconds, zoneMisses, completeMisses, parSeconds);
     setLogging(true);
     await recordTrainingSession(
       {
         trainee: name,
-        drill: drillSnapshot,
+        drill: activeDrill,
         rawSeconds,
         zoneMisses,
         completeMisses,
@@ -94,7 +147,7 @@ export function TrainScreen({
     setLogging(false);
 
     setLastLogged(finalSeconds);
-    drawNew();
+    if (!selectedSaved) drawNew();
     resetScoreFields();
   }
 
@@ -115,18 +168,74 @@ export function TrainScreen({
         </TitleFrame>
 
         <Panel>
-          <div className="flex items-center justify-between">
-            <div className="text-sm font-semibold text-zinc-300">The Drill</div>
-            <button
-              onClick={handleNewDrill}
-              className="rounded border border-red-700 px-3 py-1 text-xs uppercase tracking-wide text-red-400 hover:bg-red-950"
-            >
-              New Drill
-            </button>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="text-sm font-semibold text-zinc-300">
+              {selectedSaved ? `Saved Drill — ${selectedSaved.name}` : "The Drill"}
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowSave((v) => !v)}
+                className="rounded border border-zinc-600 px-3 py-1 text-xs uppercase tracking-wide text-zinc-300 hover:bg-zinc-800"
+              >
+                Save Drill
+              </button>
+              <button
+                onClick={handleNewDrill}
+                className="rounded border border-red-700 px-3 py-1 text-xs uppercase tracking-wide text-red-400 hover:bg-red-950"
+              >
+                New Drill
+              </button>
+            </div>
           </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              value={selectedSavedId}
+              onChange={(e) => {
+                setSelectedSavedId(e.target.value);
+                resetScoreFields();
+                setLastLogged(null);
+              }}
+              className="flex-1 rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white focus:border-red-600 focus:outline-none"
+            >
+              <option value="">Random draw</option>
+              {savedDrills.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.name}
+                </option>
+              ))}
+            </select>
+            {selectedSaved && (
+              <button
+                onClick={handleDeleteSaved}
+                className="rounded border border-zinc-700 px-3 py-2 text-xs uppercase tracking-wide text-zinc-400 hover:bg-zinc-800"
+              >
+                Delete
+              </button>
+            )}
+          </div>
+
+          {showSave && (
+            <div className="flex gap-2">
+              <input
+                value={saveName}
+                onChange={(e) => setSaveName(e.target.value)}
+                placeholder="Drill name"
+                className="flex-1 rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white focus:border-red-600 focus:outline-none"
+              />
+              <button
+                disabled={saving || saveName.trim().length === 0 || !user}
+                onClick={handleSaveDrill}
+                className="rounded bg-red-700 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-white enabled:hover:bg-red-600 disabled:bg-zinc-800 disabled:text-zinc-500"
+              >
+                {saving ? "Saving…" : "Save"}
+              </button>
+            </div>
+          )}
+
           <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
             {CATEGORY_ORDER.map((cat: CategoryKey) => (
-              <PlayingCard key={drill[cat].instanceId} cardId={drill[cat].def.id} />
+              <PlayingCard key={cat} cardId={activeDrill[cat].cardId} />
             ))}
           </div>
         </Panel>
