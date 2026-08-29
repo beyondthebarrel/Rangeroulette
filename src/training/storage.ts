@@ -35,21 +35,37 @@ export async function recordTrainingSession(
   session: Omit<TrainingSession, "id" | "loggedAt">,
   recordedBy: string,
 ): Promise<TrainingSession | null> {
-  const { data, error } = await supabase
+  const basePayload = {
+    recorded_by: recordedBy,
+    trainee: session.trainee,
+    trainee_normalized: normalizeName(session.trainee),
+    drill: session.drill,
+    raw_seconds: session.rawSeconds,
+    zone_misses: session.zoneMisses,
+    complete_misses: session.completeMisses,
+    final_seconds: session.finalSeconds,
+  };
+  const payload = session.savedDrillName
+    ? { ...basePayload, saved_drill_name: session.savedDrillName }
+    : basePayload;
+
+  let { data, error } = await supabase
     .from("training_sessions")
-    .insert({
-      recorded_by: recordedBy,
-      trainee: session.trainee,
-      trainee_normalized: normalizeName(session.trainee),
-      drill: session.drill,
-      raw_seconds: session.rawSeconds,
-      zone_misses: session.zoneMisses,
-      complete_misses: session.completeMisses,
-      final_seconds: session.finalSeconds,
-      saved_drill_name: session.savedDrillName ?? null,
-    })
+    .insert(payload)
     .select()
     .single();
+
+  // If saved_drill_name is set but the column hasn't been migrated onto the
+  // live project yet, PostgREST rejects the whole insert (PGRST204). Retry
+  // without it so the result still logs — the saved-drill name just won't
+  // show in History until the migration runs.
+  if (error?.code === "PGRST204" && "saved_drill_name" in payload) {
+    ({ data, error } = await supabase
+      .from("training_sessions")
+      .insert(basePayload)
+      .select()
+      .single());
+  }
 
   if (error || !data) {
     console.error("Failed to record training session", error);
